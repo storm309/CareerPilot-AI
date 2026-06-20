@@ -14,7 +14,7 @@ export default[
                 value:'❌ Practice Question'
             },
             {
-                value:'❌ Tubeguruji.Com Exlcusive App Access'
+                value:'❌ CareerPilot AI Exclusive App Access'
             },
             {
                 value:'❌ Email Support'
@@ -37,7 +37,7 @@ export default[
                 value:'✔️ Practice Question'
             },
             {
-                value:'✔️ Tubeguruji.Com Exlcusive App Access'
+                value:'✔️ CareerPilot AI Exclusive App Access'
             },
             {
                 value:'✔️ Email Support'

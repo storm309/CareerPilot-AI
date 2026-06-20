@@ -1,5 +1,6 @@
 "use client"
-import { UserButton } from '@clerk/nextjs'
+import { UserButton, SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
+import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -41,7 +42,16 @@ function Header() {
             ${path=='/dashboard/how'&&'text-primary font-bold'}
             `}>How it Works?</li>
         </ul>
-        <UserButton/>
+        <div>
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <Button>Sign In</Button>
+            </SignInButton>
+          </SignedOut>
+        </div>
     </div>
   )
 }
