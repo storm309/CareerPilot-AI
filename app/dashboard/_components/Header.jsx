@@ -13,8 +13,8 @@ function Header() {
     },[])
 
   return (
-    <div className='flex p-4 items-center justify-between bg-secondary shadow-sm'>
-        <Image src={'/logo.png'} width={160} height={100} alt='logo' />
+    <div className='flex p-4 items-center justify-between bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50'>
+        <Image src={'/logo.png'} width={160} height={100} alt='logo' className='h-12 w-auto object-contain' />
         <ul className='hidden md:flex gap-6'>
           <Link href={"/dashboard"}>
             <li className={`hover:text-primary hover:font-bold transition-all

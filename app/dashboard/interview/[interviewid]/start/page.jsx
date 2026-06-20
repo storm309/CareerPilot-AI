@@ -1,8 +1,6 @@
 "use client";
-import { mockinterview } from '@/utils/schema';
-import { eq } from 'drizzle-orm';
+import { getInterviewDetails } from '@/actions/dbActions';
 import React, { useEffect } from 'react';
-import {db} from 'utils/db';
 import QuestionsList from './_components/QuestionsList';
 import RecordAnswerSection from './_components/RecordAnswerSection';
 import { Button } from '@/components/ui/button';
@@ -24,10 +22,7 @@ function StartInterview({params}) {
     const dbdata = async () => {
         try {
           console.log("Interview ID:", params.interviewid);
-          const result = await db
-            .select()
-            .from(mockinterview)
-            .where(eq(mockinterview.mockid, params.interviewid));
+          const result = await getInterviewDetails(params.interviewid);
           
           if (result.length === 0) {
             console.error("No interview data found for the given interview ID:", params.interviewid);

@@ -1,8 +1,6 @@
 "use client";
-import { mockinterview } from '@/utils/schema';
-import { eq } from 'drizzle-orm';
+import { getInterviewDetails } from '@/actions/dbActions';
 import React, { useEffect } from 'react';
-import { db } from '@/utils/db';    
 import Webcam from 'react-webcam';
 import { Lightbulb, WebcamIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,10 +17,7 @@ function Interview({ params }) {
 
   const interviewDetails = async () => {
     try {
-      const result = await db
-        .select()
-        .from(mockinterview)
-        .where(eq(mockinterview.mockid, params.interviewid));
+      const result = await getInterviewDetails(params.interviewid);
       console.log(result);
       setInterviewdata(result[0]);
     } catch (error) {

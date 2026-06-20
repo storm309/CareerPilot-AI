@@ -13,9 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from "@/components/ui/textarea";
 import { chatSession } from "utils/Geminimodel";
 import { LoaderCircle } from 'lucide-react';
-import {db} from 'utils/db';
+import { insertMockInterview } from '@/actions/dbActions';
 import { v4 as uuidv4 } from 'uuid';
-import { mockinterview } from '@/utils/schema';
 import { useUser } from '@clerk/clerk-react';
 import moment from 'moment';
 import { useRouter } from 'next/navigation';
@@ -64,7 +63,7 @@ function AddNewInterview() {
             setResponse(jsonResponse);
     
             if (jsonResponse) {
-                const output = await db.insert(mockinterview).values({
+                const output = await insertMockInterview({
                     mockid: uuidv4(),
                     jsonmockresp: responseText,  // Use the cleaned response
                     jobposition: Jobpost,
@@ -72,7 +71,7 @@ function AddNewInterview() {
                     jobexp: Experience,
                     createdby: user?.primaryEmailAddress?.emailAddress,
                     createddate: moment().format('YYYY-MM-DD HH:mm:ss')
-                }).returning({ mockId: mockinterview.mockid });
+                });
 
                 console.log("Inserted id:", output);
     

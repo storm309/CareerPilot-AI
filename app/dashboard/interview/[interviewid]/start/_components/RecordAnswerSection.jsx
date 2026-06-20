@@ -8,9 +8,8 @@ import { Mic } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { useUser } from '@clerk/clerk-react';
 import { chatSession } from '@/utils/Geminimodel';
-import { db } from '@/utils/db';
+import { insertUserAnswer } from '@/actions/dbActions';
 import moment from 'moment';
-import { userAnswers } from '@/utils/schema';
 
 
 // Dynamically import Webcam so it doesn't load on the server
@@ -111,7 +110,7 @@ function RecordAnswerSection({ mockinterviewquestions, activequestionindex, inte
       return;
     }
   
-    const resp = await db.insert(userAnswers).values({
+    const resp = await insertUserAnswer({
       mockidRef: interviewdata.mockid, // Ensure this is defined
       question: mockinterviewquestions[activequestionindex]?.question,
       correctanswer: mockinterviewquestions[activequestionindex]?.answer,

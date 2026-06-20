@@ -1,7 +1,5 @@
 "use client";
-import { db } from '@/utils/db';
-import { userAnswers } from '@/utils/schema';
-import { eq } from 'drizzle-orm';
+import { getFeedbackByMockId } from '@/actions/dbActions';
 import React, { useEffect, useState } from 'react';
 import {
   Collapsible,
@@ -22,10 +20,7 @@ function Feedback({ params }) {
   }, []);
 
   const GetInterviewData = async () => {
-    const result = await db.select()
-      .from(userAnswers)
-      .where(eq(userAnswers.mockidRef, params.interviewid))
-      .orderBy(userAnswers.id);
+    const result = await getFeedbackByMockId(params.interviewid);
 
     console.log(result);
     setFeedbackData(result);

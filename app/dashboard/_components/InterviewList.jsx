@@ -1,6 +1,5 @@
 "use client";
-import { db } from '@/utils/db';
-import { mockinterview } from '@/utils/schema';
+import { getInterviewList as fetchInterviewList } from '@/actions/dbActions';
 import { useUser } from '@clerk/clerk-react'
 import { desc, eq } from 'drizzle-orm';
 import React, { useEffect } from 'react'
@@ -16,10 +15,7 @@ function InterviewList() {
      }, [user]) 
 
     const GetInterviewList = async () => {
-        const response = await db.select()
-        .from(mockinterview)
-        .where(eq(mockinterview.createdby,user?.primaryEmailAddress?.emailAddress))
-        .orderBy(desc(mockinterview.id));
+        const response = await fetchInterviewList(user?.primaryEmailAddress?.emailAddress);
 
         console.log(response);
 
