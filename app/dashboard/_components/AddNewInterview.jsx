@@ -6,18 +6,18 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from "@/components/ui/textarea";
-import { chatSession } from "utils/Geminimodel";
+import { createChatSession } from '@/utils/Geminimodel';
 import { LoaderCircle } from 'lucide-react';
 import { insertMockInterview } from '@/actions/dbActions';
 import { v4 as uuidv4 } from 'uuid';
-import { useUser } from '@clerk/clerk-react';
+import { useUser } from '@clerk/nextjs';
 import moment from 'moment';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 function AddNewInterview() {
     const [openDialog, setOpenDialog] = React.useState(false);
@@ -25,7 +25,6 @@ function AddNewInterview() {
     const [JobDescription, setJobDescription] = React.useState("");
     const [Experience, setExperience] = React.useState("");
     const [loading, setLoading] = React.useState(false);
-    const [response, setResponse] = React.useState([]);
     const { user } = useUser();
     const Router = useRouter();
 
@@ -33,110 +32,119 @@ function AddNewInterview() {
         e.preventDefault();
         setLoading(true);
 
-        const Inputprompt = `Job position: ${Jobpost}, Job Description: ${JobDescription}, Experience: ${Experience}. Based on the Job position, Job Description, and Experience, give me 5 interview questions along with answers in JSON format. Provide both question and answer fields in the JSON.`;
+        const Inputprompt = `Job position: ${Jobpost}, Job Description: ${JobDescription}, Years of Experience: ${Experience}. Based on these details, give me exactly 5 interview questions along with ideal answers in JSON format. Return ONLY a JSON array like: [{"question":"...","answer":"..."}]`;
 
         try {
-            const result = await chatSession.sendMessage(Inputprompt);
-
-            // Await the result's text content
+            // ✅ Fresh chat session for every submit - prevents reuse bugs
+            const session = createChatSession();
+            const result = await session.sendMessage(Inputprompt);
             let responseText = await result.response.text();
 
-            // Clean up the response to remove any non-JSON parts
+            // Clean up markdown code blocks if any
             responseText = responseText.trim()
-                .replace(/```json/g, '')  // Remove any markdown JSON block formatting
-                .replace(/```/g, '');     // Remove leftover closing markdown
+                .replace(/```json/g, '')
+                .replace(/```/g, '')
+                .trim();
 
-            // Try to parse the cleaned response
+            // Parse JSON
             let jsonResponse;
             try {
                 jsonResponse = JSON.parse(responseText);
             } catch (parseError) {
-                console.error("Error parsing JSON:", parseError);
-                console.log("Raw response text:", responseText); // Log the raw response for debugging
-                alert("There was an error parsing the response. Please try again.");
+                console.error("JSON Parse Error:", parseError, "\nRaw:", responseText);
+                toast.error("AI response was not valid JSON. Please try again.");
                 setLoading(false);
                 return;
             }
 
-            // Log the parsed JSON response
-            console.log(jsonResponse);
-            setResponse(jsonResponse);
-
             if (jsonResponse) {
+                // ✅ Use 'createdat' to match the database schema column name
                 const output = await insertMockInterview({
                     mockid: uuidv4(),
-                    jsonmockresp: responseText,  // Use the cleaned response
+                    jsonmockresp: JSON.stringify(jsonResponse),
                     jobposition: Jobpost,
                     jobdescription: JobDescription,
                     jobexp: Experience,
                     createdby: user?.primaryEmailAddress?.emailAddress,
-                    createddate: moment().format('YYYY-MM-DD HH:mm:ss')
+                    createdat: moment().format('YYYY-MM-DD HH:mm:ss')
                 });
 
-                console.log("Inserted id:", output);
-
-                console.log("Inserted id:", output[0].mockId);
-
-                if (output) {
+                if (output && output[0]?.mockId) {
+                    toast.success("Interview created successfully!");
                     setOpenDialog(false);
                     Router.push(`/dashboard/interview/${output[0].mockId}`);
+                } else {
+                    toast.error("Something went wrong saving to database. Please try again.");
                 }
             }
         } catch (error) {
-            console.error("Error fetching interview questions:", error);
-            alert("There was an error fetching interview questions. Please try again.");
+            console.error("Error:", error);
+            toast.error("An error occurred: " + (error?.message || "Please try again."));
         } finally {
             setLoading(false);
         }
     };
 
-
     return (
         <div>
-            <div className='p-10 border rounded-lg bg-secondary hover:scale-105 hover:shadow-md cursor-pointer transition-all'
+            <div
+                className='p-10 border rounded-lg bg-secondary hover:scale-105 hover:shadow-md cursor-pointer transition-all'
                 onClick={() => setOpenDialog(true)}
             >
                 <h2 className='text-lg text-center'>+ Add new</h2>
             </div>
-            <div className='bg-slate-300'>
-                <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                    <DialogContent className="bg-white max-w-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl">Tell us more about your Job interview</DialogTitle>
-                            <DialogDescription>
-                                <form onSubmit={onSubmit}>
-                                    <div>
-                                        <h2>Add the details mentioned below</h2>
-                                        <div className='mt-7 my-3'>
-                                            <label>Job Title</label>
-                                            <Input placeholder="Ex.Full stack developer" required
-                                                onChange={(event) => setJobpost(event.target.value)} />
-                                        </div>
-                                        <div className='my-3'>
-                                            <label>Job Description / Tech Stack</label>
-                                            <Textarea placeholder="Ex.React, Java etc." required
-                                                onChange={(event) => setJobDescription(event.target.value)} />
-                                        </div>
-                                        <div className='my-3'>
-                                            <label>Enter the Experience you have</label>
-                                            <Input placeholder="5" max="50" type="number" required
-                                                onChange={(event) => setExperience(event.target.value)} />
-                                        </div>
-                                    </div>
-                                    <div className='flex gap-5 justify-end'>
-                                        <Button type="button" variant="ghost" onClick={() => setOpenDialog(false)} >Cancel</Button>
-                                        <Button type="submit" disable={loading} className='bg-blue-700'>
-                                            {loading ?
-                                                <><LoaderCircle className='animate-spin' />'Generating from AI '</> : 'Start Interview'}
-                                        </Button>
-                                    </div>
-                                </form>
-                            </DialogDescription>
-                        </DialogHeader>
-                    </DialogContent>
-                </Dialog>
-            </div>
 
+            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                <DialogContent className="bg-white max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold">Tell us about your Job Interview</DialogTitle>
+                        <DialogDescription className="text-gray-500">
+                            Add the details below and our AI will generate 5 tailored interview questions for you.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form onSubmit={onSubmit} className="mt-4 space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Job Role / Position</label>
+                            <Input
+                                placeholder="Ex. Full Stack Developer"
+                                required
+                                onChange={(e) => setJobpost(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Job Description / Tech Stack</label>
+                            <Textarea
+                                placeholder="Ex. React, Node.js, PostgreSQL, REST APIs..."
+                                required
+                                onChange={(e) => setJobDescription(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+                            <Input
+                                placeholder="Ex. 3"
+                                min="0"
+                                max="50"
+                                type="number"
+                                required
+                                onChange={(e) => setExperience(e.target.value)}
+                            />
+                        </div>
+
+                        <div className='flex gap-3 justify-end pt-2'>
+                            <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={loading}>
+                                {loading
+                                    ? <><LoaderCircle className='animate-spin mr-2 h-4 w-4' /> Generating Questions...</>
+                                    : 'Start Interview 🚀'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
