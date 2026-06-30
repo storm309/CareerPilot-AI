@@ -39,14 +39,16 @@ export default function Home() {
               </svg>
             </Button>
           </Link>
-          <Button variant="outline" className="w-full sm:w-auto text-lg px-8 py-6 rounded-full border-gray-300 hover:bg-gray-50 transition-all">
-            Watch Demo
-          </Button>
+          <a href="#how-it-works" className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full text-lg px-8 py-6 rounded-full border-gray-300 hover:bg-gray-50 transition-all">
+              Watch Demo
+            </Button>
+          </a>
         </div>
       </section>
 
       {/* How it Works Section */}
-      <section className="relative z-10 py-16 px-4 mx-auto max-w-screen-xl text-center lg:py-24 lg:px-12">
+      <section id="how-it-works" className="relative z-10 py-16 px-4 mx-auto max-w-screen-xl text-center lg:py-24 lg:px-12">
         <div className="mb-12">
           <h2 className="font-extrabold text-3xl md:text-4xl text-gray-900 mb-4">How it Works?</h2>
           <p className="text-lg text-gray-500 font-medium max-w-2xl mx-auto">Prepare for your next big opportunity in just three simple steps.</p>

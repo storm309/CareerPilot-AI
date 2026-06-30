@@ -12,7 +12,7 @@ export default function Page() {
       />
 
       <div className="hidden lg:relative lg:block lg:p-12">
-        <a className="block text-white" href="#">
+        <a className="block text-white" href="/">
           <span className="sr-only">Home</span>
           <svg
             className="h-8 sm:h-10"

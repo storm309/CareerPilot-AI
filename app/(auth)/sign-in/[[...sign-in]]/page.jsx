@@ -9,7 +9,7 @@ export default function Page() {
     <section className="relative flex h-32 items-end bg-gray-900 lg:col-span-5 lg:h-full xl:col-span-6">
 
       <div className="hidden lg:relative lg:block lg:p-12">
-        <a className="block text-white" href="#">
+        <a className="block text-white" href="/">
           <span className="sr-only">Home</span>
           <svg
             className="h-8 sm:h-10"
