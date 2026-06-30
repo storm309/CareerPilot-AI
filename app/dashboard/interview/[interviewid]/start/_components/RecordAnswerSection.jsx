@@ -7,7 +7,7 @@ import useSpeechToText from 'react-hook-speech-to-text';
 import { Mic } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { useUser } from '@clerk/clerk-react';
-import { chatSession } from '@/utils/Geminimodel';
+import { chatSession, createChatSession } from '@/utils/Geminimodel';
 import { insertUserAnswer } from '@/actions/dbActions';
 import moment from 'moment';
 
@@ -86,7 +86,8 @@ function RecordAnswerSection({ mockinterviewquestions, activequestionindex, inte
   
     const feedbackPrompt = `Question:${mockinterviewquestions[activequestionindex]?.question} Answer:${userAnswer}, Depends on question and user answer for given interview question please give us rating for answer and feedback in JSON format with rating and feedback fields.Make sure that answer is in JSON format only.`;
   
-    const result = await chatSession.sendMessage(feedbackPrompt);
+    const session = createChatSession();
+    const result = await session.sendMessage(feedbackPrompt);
     let responseText = await result.response.text();
   
     // Log the original response text
