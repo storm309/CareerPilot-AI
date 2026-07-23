@@ -35,34 +35,28 @@ function RecordAnswerSection({ mockinterviewquestions, activequestionindex, inte
     interimResults: true, // ensure interim results are processed
   });
 
-  // Append speech-to-text results to userAnswer
+  // Update user answer from speech-to-text results safely
   useEffect(() => {
     if (results && results.length > 0) {
-      results.forEach((result) => {
-        if (result?.transcript) {
-          setUserAnswer((prevAns) => prevAns + ' ' + result.transcript);
-        }
-      });
+      setUserAnswer(results.map((r) => r.transcript).join(' '));
     }
   }, [results]);
 
   // Save to DB after recording ends and if the userAnswer length is valid
   useEffect(() => {
-    if (!isRecording && userAnswer.length > 10) {
+    if (!isRecording && userAnswer.length > 10 && !loading) {
       console.log('Saving answer to DB:', userAnswer);
       updateUserAnswerInDb();
     }
-  }, [userAnswer, isRecording]);
+  }, [userAnswer, isRecording, loading]);
 
   useEffect(() => {
     if(isRecording){
-    toast.info('Answer should be more than 10 characters');
+      toast.info('Answer should be more than 10 characters');
     }
   }, [isRecording]);
 
   const saveUserAnswer = async () => {
-    setLoading(true);
-
     if (isRecording) {
       stopSpeechToText(); // Only stop recording on button click
       console.log('Recording stopped');
@@ -70,49 +64,32 @@ function RecordAnswerSection({ mockinterviewquestions, activequestionindex, inte
       startSpeechToText(); // Start recording on button click
       console.log('Recording started');
     }
-
-    setLoading(false);
   };
 
   const updateUserAnswerInDb = async () => {
+    setLoading(true);
     console.log('User answer ready to save:', userAnswer);
   
     // Check if interviewdata and mockid are valid
     if (!interviewdata || !interviewdata.mockid) {
       console.error("interviewdata or mockid is undefined");
       toast.error("Interview data is not available. Please try again.");
+      setLoading(false);
       return; // Exit the function
     }
   
     const feedbackPrompt = `Question:${mockinterviewquestions[activequestionindex]?.question} Answer:${userAnswer}, Depends on question and user answer for given interview question please give us rating for answer and feedback in JSON format with rating and feedback fields.Make sure that answer is in JSON format only.`;
   
-    const session = createChatSession();
-    const result = await session.sendMessage(feedbackPrompt);
-    let responseText = await result.response.text();
-  
-    // Log the original response text
-    console.log("Original Response Text:", responseText);
-  
-    // Sanitize the response to remove bad control characters and clean up non-JSON parts
-    responseText = responseText.trim()
-      .replace(/```json/g, '')   // Remove any markdown JSON block formatting
-      .replace(/```/g, '')       // Remove leftover closing markdown
-      .replace(/[\u0000-\u001F]+/g, ''); // Remove control characters from JSON
-  
-    console.log("Sanitized Response Text:", responseText);
-  
-    let jsonResponse;
     try {
-      jsonResponse = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error("Error parsing JSON:", parseError);
-      toast.error("There was an error parsing the feedback. Please try again.", { duration: 5000 });
-      setLoading(false);
-      return;
-    }
-  
-    const resp = await insertUserAnswer({
-      mockidRef: interviewdata.mockid, // Ensure this is defined
+      const session = createChatSession();
+      const result = await session.sendMessage(feedbackPrompt);
+      const responseText = await result.response.text();
+    
+      // Parse JSON directly since Gemini outputs strict JSON now
+      const jsonResponse = JSON.parse(responseText);
+    
+      const resp = await insertUserAnswer({
+        mockidRef: interviewdata.mockid, // Ensure this is defined
       question: mockinterviewquestions[activequestionindex]?.question,
       correctanswer: mockinterviewquestions[activequestionindex]?.answer,
       useranswer: userAnswer,
@@ -128,12 +105,19 @@ function RecordAnswerSection({ mockinterviewquestions, activequestionindex, inte
       setResults([]); // Clear the results
     }
     setLoading(false);
+    
     // Simulate API call to save
     setResults([]); // Clear the results
     setTimeout(() => {
       setLoading(false);
       toast.success('Click on Next Question to continue');
     }, 1000);
+    
+    } catch (parseError) {
+      console.error("Error parsing JSON:", parseError);
+      toast.error("There was an error parsing the feedback. Please try again.");
+      setLoading(false);
+    }
   };
 
   // Error handler for webcam

@@ -40,13 +40,7 @@ function AddNewInterview() {
             const result = await session.sendMessage(Inputprompt);
             let responseText = await result.response.text();
 
-            // Clean up markdown code blocks if any
-            responseText = responseText.trim()
-                .replace(/```json/g, '')
-                .replace(/```/g, '')
-                .trim();
-
-            // Parse JSON
+            // Parse JSON directly since Gemini is configured to output strict JSON
             let jsonResponse;
             try {
                 jsonResponse = JSON.parse(responseText);
