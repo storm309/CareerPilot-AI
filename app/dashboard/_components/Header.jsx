@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import React, { useEffect } from 'react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 function Header() {
 
@@ -50,7 +51,8 @@ function Header() {
               `}>How it Works?</li>
             </Link>
         </ul>
-        <div>
+        <div className='flex items-center gap-4'>
+          <ThemeToggle />
           <SignedIn>
             <UserButton />
           </SignedIn>

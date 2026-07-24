@@ -33,9 +33,9 @@ function Feedback({ params }) {
         const rating = parseFloat(item.rating) || 0;
         return sum + rating;
       }, 0);
-  
+
       const average = totalRating / data.length;
-      setAverageRating(average.toFixed(1)); 
+      setAverageRating(average.toFixed(1));
     }
   };
 
@@ -82,19 +82,19 @@ function Feedback({ params }) {
                         Rating: {data.rating}/10
                       </span>
                     </div>
-                    
+
                     <div className='p-4 border border-red-100 bg-white rounded-xl shadow-sm'>
-                      <strong className="text-red-700 flex items-center gap-2 mb-1">❌ Your Answer</strong> 
+                      <strong className="text-red-700 flex items-center gap-2 mb-1">❌ Your Answer</strong>
                       <p className="text-slate-700 text-sm leading-relaxed">{data.useranswer}</p>
                     </div>
-                    
+
                     <div className='p-4 border border-green-100 bg-white rounded-xl shadow-sm'>
-                      <strong className="text-green-700 flex items-center gap-2 mb-1">✅ Ideal Answer</strong> 
+                      <strong className="text-green-700 flex items-center gap-2 mb-1">✅ Ideal Answer</strong>
                       <p className="text-slate-700 text-sm leading-relaxed text-justify">{data.correctanswer}</p>
                     </div>
-                    
+
                     <div className='p-4 border border-blue-100 bg-blue-50/50 rounded-xl shadow-sm'>
-                      <strong className="text-blue-700 flex items-center gap-2 mb-1">💡 HR Feedback & Suggestions</strong> 
+                      <strong className="text-blue-700 flex items-center gap-2 mb-1">💡 HR Feedback & Suggestions</strong>
                       <p className="text-slate-700 text-sm leading-relaxed text-justify">{data.feedback}</p>
                     </div>
                   </div>

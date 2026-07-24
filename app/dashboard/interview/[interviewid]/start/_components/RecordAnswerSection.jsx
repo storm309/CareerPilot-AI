@@ -1,13 +1,14 @@
 "use client";
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import useSpeechToText from 'react-hook-speech-to-text';
-import { Mic } from 'lucide-react';
-import { toast, Toaster } from 'sonner';
+import { Mic, StopCircle, Send } from 'lucide-react';
+import { toast } from 'sonner';
 import { useUser } from '@clerk/clerk-react';
-import { chatSession, createChatSession } from '@/utils/Geminimodel';
+import { createChatSession } from '@/utils/Geminimodel';
 import { insertUserAnswer } from '@/actions/dbActions';
 import moment from 'moment';
 
@@ -42,26 +43,18 @@ function RecordAnswerSection({ mockinterviewquestions, activequestionindex, inte
     }
   }, [results]);
 
-  // Save to DB after recording ends and if the userAnswer length is valid
-  useEffect(() => {
-    if (!isRecording && userAnswer.length > 10 && !loading) {
-      console.log('Saving answer to DB:', userAnswer);
-      updateUserAnswerInDb();
-    }
-  }, [userAnswer, isRecording, loading]);
-
   useEffect(() => {
     if(isRecording){
       toast.info('Answer should be more than 10 characters');
     }
   }, [isRecording]);
 
-  const saveUserAnswer = async () => {
+  const toggleRecording = async () => {
     if (isRecording) {
-      stopSpeechToText(); // Only stop recording on button click
+      stopSpeechToText();
       console.log('Recording stopped');
     } else {
-      startSpeechToText(); // Start recording on button click
+      startSpeechToText();
       console.log('Recording started');
     }
   };
@@ -83,36 +76,46 @@ Question: ${mockinterviewquestions[activequestionindex]?.question}
 User's Answer: ${userAnswer}
 
 Provide a harsh but constructive evaluation of the user's answer.
-1. Rate the answer from 1-10 (be strict, 10 is only for flawless answers).
-2. Give detailed feedback pointing out grammatical errors, lack of depth, and technical inaccuracies.
-3. Suggest the ideal professional phrasing.
-Return ONLY in JSON format with two fields: 'rating' (number or string) and 'feedback' (string).`;
+1. Rate the answer from 1-10 (be strict, 10 is only for flawless answers) -> map to "score".
+2. Identify core "strengths".
+3. Identify core "weaknesses".
+4. Suggest concrete "improvements".
+5. Provide the "expectedAnswer" (how a senior engineer would answer it).
+6. Assess their "confidenceLevel" (Low/Medium/High) based on answer structure/wording.
+
+Return ONLY in JSON format with fields: 'score' (string), 'feedback' (string - general summary), 'strengths' (string), 'weaknesses' (string), 'improvements' (string), 'expectedAnswer' (string), 'confidenceLevel' (string).`;
   
     try {
       const session = createChatSession();
       const result = await session.sendMessage(feedbackPrompt);
-      const responseText = await result.response.text();
+      let responseText = await result.response.text();
     
-      // Parse JSON directly since Gemini outputs strict JSON now
+      if (responseText.includes('```json')) {
+        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+      }
       const jsonResponse = JSON.parse(responseText);
     
       const resp = await insertUserAnswer({
-        mockidRef: interviewdata.mockid, // Ensure this is defined
-      question: mockinterviewquestions[activequestionindex]?.question,
-      correctanswer: mockinterviewquestions[activequestionindex]?.answer,
-      useranswer: userAnswer,
-      feedback: jsonResponse?.feedback,
-      rating: jsonResponse?.rating,
-      userEmail: user?.primaryEmailAddress?.emailAddress,
-      createdat: moment().format('YYYY-MM-DD HH:mm:ss')
-    });
+        mockidRef: interviewdata.mockid,
+        question: mockinterviewquestions[activequestionindex]?.question,
+        correctanswer: jsonResponse?.expectedAnswer || mockinterviewquestions[activequestionindex]?.answer,
+        useranswer: userAnswer,
+        feedback: jsonResponse?.feedback,
+        rating: jsonResponse?.score || jsonResponse?.rating,
+        strengths: jsonResponse?.strengths,
+        weaknesses: jsonResponse?.weaknesses,
+        improvements: jsonResponse?.improvements,
+        confidenceLevel: jsonResponse?.confidenceLevel,
+        userEmail: user?.primaryEmailAddress?.emailAddress,
+        createdat: moment().format('YYYY-MM-DD HH:mm:ss')
+      });
   
-    if (resp) {
-      toast.success('Answer recorded successfully');
-      setUserAnswer('');
-      setResults([]); // Clear the results
-    }
-    setLoading(false);
+      if (resp) {
+        toast.success('Answer recorded successfully');
+        setUserAnswer('');
+        setResults([]);
+      }
+      setLoading(false);
     
     // Simulate API call to save
     setResults([]); // Clear the results
@@ -156,17 +159,33 @@ Return ONLY in JSON format with two fields: 'rating' (number or string) and 'fee
         )}
       </div>
 
-      <Button variant="outline" className="my-10" disabled={loading} onClick={saveUserAnswer}>
-        {isRecording ? (
-          <h2 className="text-red-700 flex gap-2">
-            <Mic /> Recording ...
-          </h2>
-        ) : (
-          <h2 className="text-blue-700 flex gap-2">
-            <Mic /> Record Answer
-          </h2>
-        )}
-      </Button>
+      <div className="w-full mt-8">
+        <label className="text-sm font-semibold text-slate-700 mb-2 block">Your Answer (Edit before submitting)</label>
+        <Textarea 
+          value={userAnswer}
+          onChange={(e) => setUserAnswer(e.target.value)}
+          className="min-h-[150px] p-4 text-base focus-visible:ring-indigo-500 rounded-xl w-full"
+          placeholder="Start recording, or type your answer manually here..."
+        />
+      </div>
+
+      <div className="flex gap-4 mt-6">
+        <Button variant={isRecording ? "destructive" : "outline"} className="flex gap-2 rounded-xl" onClick={toggleRecording}>
+          {isRecording ? (
+            <><StopCircle className="w-5 h-5" /> Stop Recording</>
+          ) : (
+            <><Mic className="w-5 h-5" /> Record Audio</>
+          )}
+        </Button>
+
+        <Button 
+          className="bg-indigo-600 hover:bg-indigo-700 text-white flex gap-2 rounded-xl"
+          onClick={updateUserAnswerInDb}
+          disabled={loading || userAnswer.length < 10}
+        >
+          {loading ? "Evaluating..." : <><Send className="w-5 h-5" /> Submit Answer</>}
+        </Button>
+      </div>
     </div>
   );
 }

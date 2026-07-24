@@ -3,14 +3,17 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { createChatSession } from '@/utils/Geminimodel';
-import { LoaderCircle, Sparkles, CheckCircle, Mail, PenTool } from 'lucide-react';
+import { LoaderCircle, Sparkles, CheckCircle, Mail, PenTool, History } from 'lucide-react';
 import { toast } from 'sonner';
+import { useUser } from '@clerk/nextjs';
+import { insertGrammarHistory, insertEmailHistory } from '@/actions/dbActions';
 
 function Preparation() {
   const [text, setText] = useState("");
   const [mode, setMode] = useState("grammar"); // "grammar" or "email"
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const { user } = useUser();
 
   const handleAnalyze = async () => {
     if (!text || text.trim().length < 10) {
@@ -45,7 +48,28 @@ function Preparation() {
 
       const jsonResponse = JSON.parse(responseText);
       setFeedback(jsonResponse);
-      toast.success("Analysis complete!");
+      
+      // Save to database
+      if (user?.primaryEmailAddress?.emailAddress) {
+        if (mode === "grammar") {
+          await insertGrammarHistory({
+            userEmail: user.primaryEmailAddress.emailAddress,
+            originalText: text,
+            correctedText: jsonResponse.correctedText,
+            feedback: typeof jsonResponse.feedback === 'string' ? jsonResponse.feedback : JSON.stringify(jsonResponse.feedback)
+          });
+        } else {
+          await insertEmailHistory({
+            userEmail: user.primaryEmailAddress.emailAddress,
+            emailType: "Draft Review",
+            originalText: text,
+            generatedEmail: jsonResponse.correctedText,
+            feedback: typeof jsonResponse.feedback === 'string' ? jsonResponse.feedback : JSON.stringify(jsonResponse.feedback)
+          });
+        }
+      }
+
+      toast.success("Analysis complete and saved to history!");
     } catch (error) {
       console.error("Error analyzing text:", error);
       toast.error("Failed to analyze. Please try again.");

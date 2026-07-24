@@ -24,6 +24,8 @@ function AddNewInterview() {
     const [Jobpost, setJobpost] = React.useState("");
     const [JobDescription, setJobDescription] = React.useState("");
     const [Experience, setExperience] = React.useState("");
+    const [interviewType, setInterviewType] = React.useState("Technical");
+    const [resumeFile, setResumeFile] = React.useState(null);
     const [loading, setLoading] = React.useState(false);
     const { user } = useUser();
     const Router = useRouter();
@@ -31,8 +33,27 @@ function AddNewInterview() {
     const onSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        let resumeText = "";
 
-        const Inputprompt = `Job position: ${Jobpost}, Job Description: ${JobDescription}, Years of Experience: ${Experience}. Based on these details, give me exactly 5 interview questions along with ideal answers in JSON format. Return ONLY a JSON array like: [{"question":"...","answer":"..."}]`;
+        if (resumeFile) {
+            try {
+                const formData = new FormData();
+                formData.append('file', resumeFile);
+                const response = await fetch('/api/parse-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.text) {
+                    resumeText = data.text;
+                }
+            } catch (err) {
+                console.error("PDF parse error:", err);
+                toast.error("Failed to parse resume. Proceeding without it.");
+            }
+        }
+
+        const Inputprompt = `Job position: ${Jobpost}, Job Description: ${JobDescription}, Years of Experience: ${Experience}, Interview Type: ${interviewType}. ${resumeText ? `Here is the candidate's resume: ${resumeText}` : ''} Based on these details, give me exactly 5 interview questions specifically tailored for a ${interviewType} interview. Return ONLY a JSON array like: [{"question":"...","answer":"..."}]`;
 
         try {
             // ✅ Fresh chat session for every submit - prevents reuse bugs
@@ -59,6 +80,8 @@ function AddNewInterview() {
                     jobposition: Jobpost,
                     jobdescription: JobDescription,
                     jobexp: Experience,
+                    interviewType: interviewType,
+                    resumeText: resumeText.substring(0, 5000), // store up to 5k chars
                     createdby: user?.primaryEmailAddress?.emailAddress,
                     createdat: moment().format('YYYY-MM-DD HH:mm:ss')
                 });
@@ -104,14 +127,28 @@ function AddNewInterview() {
                     </DialogHeader>
 
                     <form onSubmit={onSubmit} className="mt-4 space-y-5">
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">Job Role / Position</label>
-                            <Input
-                                placeholder="Ex. Full Stack Developer"
-                                required
-                                onChange={(e) => setJobpost(e.target.value)}
-                                className="focus-visible:ring-indigo-600 border-slate-200"
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">Job Role / Position</label>
+                                <Input
+                                    placeholder="Ex. Full Stack Developer"
+                                    required
+                                    onChange={(e) => setJobpost(e.target.value)}
+                                    className="focus-visible:ring-indigo-600 border-slate-200"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">Interview Type</label>
+                                <select 
+                                    className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+                                    value={interviewType}
+                                    onChange={(e) => setInterviewType(e.target.value)}
+                                >
+                                    <option value="Technical">Technical</option>
+                                    <option value="HR">HR / Behavioral</option>
+                                    <option value="Mixed">Mixed (Tech + HR)</option>
+                                </select>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 mb-1">Job Description / Tech Stack</label>
@@ -122,17 +159,28 @@ function AddNewInterview() {
                                 className="focus-visible:ring-indigo-600 border-slate-200 min-h-[100px]"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">Years of Experience</label>
-                            <Input
-                                placeholder="Ex. 3"
-                                min="0"
-                                max="50"
-                                type="number"
-                                required
-                                onChange={(e) => setExperience(e.target.value)}
-                                className="focus-visible:ring-indigo-600 border-slate-200"
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">Years of Experience</label>
+                                <Input
+                                    placeholder="Ex. 3"
+                                    min="0"
+                                    max="50"
+                                    type="number"
+                                    required
+                                    onChange={(e) => setExperience(e.target.value)}
+                                    className="focus-visible:ring-indigo-600 border-slate-200"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1">Upload Resume (Optional PDF)</label>
+                                <Input
+                                    type="file"
+                                    accept="application/pdf"
+                                    onChange={(e) => setResumeFile(e.target.files[0])}
+                                    className="focus-visible:ring-indigo-600 border-slate-200 file:text-indigo-600 file:font-semibold file:border-0 file:bg-indigo-50 hover:file:bg-indigo-100"
+                                />
+                            </div>
                         </div>
 
                         <div className='flex gap-4 justify-end pt-4 border-t border-slate-100'>

@@ -6,20 +6,24 @@ import React, { useEffect } from 'react'
 import InterviewcardList from './InterviewcardList';
 
 
+import { Skeleton } from '@/components/ui/skeleton';
+
 function InterviewList() {
     const {user} = useUser();
     const[interviewList, setInterviewList] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
 
     useEffect(() => { 
-        user && GetInterviewList();
+        if (user) {
+          GetInterviewList();
+        }
      }, [user]) 
 
     const GetInterviewList = async () => {
+        setLoading(true);
         const response = await fetchInterviewList(user?.primaryEmailAddress?.emailAddress);
-
-        console.log(response);
-
         setInterviewList(response);
+        setLoading(false);
     }
   return (
     <div className="mt-12">
@@ -28,9 +32,15 @@ function InterviewList() {
         </div>
 
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-            {interviewList && interviewList.map((interview,index) => (
-                <InterviewcardList key={index} interview={interview} />
-            ))}
+            {loading ? (
+                [1,2,3].map((item, index) => (
+                    <Skeleton key={index} className="h-[200px] w-full rounded-2xl bg-slate-200" />
+                ))
+            ) : (
+                interviewList && interviewList.map((interview,index) => (
+                    <InterviewcardList key={index} interview={interview} />
+                ))
+            )}
         </div>
     </div>
   )
