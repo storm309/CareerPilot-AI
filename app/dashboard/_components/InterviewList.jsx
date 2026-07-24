@@ -38,7 +38,7 @@ function InterviewList() {
                 ))
             ) : (
                 interviewList && interviewList.map((interview,index) => (
-                    <InterviewcardList key={index} interview={interview} />
+                    <InterviewcardList key={index} interview={interview} onDelete={GetInterviewList} />
                 ))
             )}
         </div>

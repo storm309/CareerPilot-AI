@@ -114,3 +114,16 @@ export async function getDashboardStats(email) {
     return null;
   }
 }
+
+export async function deleteInterview(mockid) {
+  try {
+    // Delete answers first (if no cascade)
+    await db.delete(userAnswers).where(eq(userAnswers.mockidRef, mockid));
+    // Then delete the interview
+    await db.delete(mockinterview).where(eq(mockinterview.mockid, mockid));
+    return true;
+  } catch (error) {
+    console.error("Error deleting interview:", error);
+    throw error;
+  }
+}

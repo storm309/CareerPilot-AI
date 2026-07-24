@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import Header from "./dashboard/_components/Header";
+import LandingHeader from "./_components/LandingHeader";
 import { AtomIcon, ReceiptText, Focus, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-50 via-white to-cyan-50">
-      <Header />
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-50 via-white to-cyan-50 dark:from-background dark:via-background dark:to-background">
+      <LandingHeader />
       
       {/* Hero Section */}
       <section className="relative z-10 pt-20 pb-16 px-4 mx-auto max-w-screen-xl text-center lg:pt-32 lg:px-12">

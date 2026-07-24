@@ -9,59 +9,59 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 
 function Header() {
 
-    const path=usePathname();
-    useEffect(()=>{
-        console.log(path)
-    },[])
+  const path = usePathname();
+  useEffect(() => {
+    console.log(path)
+  }, [])
 
   return (
     <div className='flex p-4 items-center justify-between bg-background/80 backdrop-blur-md shadow-sm sticky top-0 z-50'>
-        <Image src={'/logo.png'} width={160} height={100} alt='logo' className='h-12 w-auto object-contain dark:invert' />
-        <ul className='hidden md:flex gap-6'>
-          <Link href={"/dashboard"}>
-            <li className={`hover:text-primary hover:font-bold transition-all
+      <Image src={'/logo.png'} width={160} height={100} alt='logo' className='h-12 w-auto object-contain dark:invert' />
+      <ul className='hidden md:flex gap-6'>
+        <Link href={"/dashboard"}>
+          <li className={`hover:text-primary hover:font-bold transition-all
             cursor-pointer
-            ${path=='/dashboard'&&'text-primary font-bold'}
+            ${path == '/dashboard' && 'text-primary font-bold'}
             `}
-            
-            >Dashboard</li>
-            </Link>
-            <Link href={"/dashboard/questions"}>
-            <li className={`hover:text-primary hover:font-bold transition-all
+
+          >Dashboard</li>
+        </Link>
+        <Link href={"/dashboard/questions"}>
+          <li className={`hover:text-primary hover:font-bold transition-all
             cursor-pointer
-            ${path=='/dashboard/questions'&&'text-primary font-bold'}
+            ${path == '/dashboard/questions' && 'text-primary font-bold'}
             `}>Questions</li>
-            </Link>
-              <Link href={"/dashboard/upgrade"}>
-            <li className={`hover:text-primary hover:font-bold transition-all
+        </Link>
+        <Link href={"/dashboard/upgrade"}>
+          <li className={`hover:text-primary hover:font-bold transition-all
             cursor-pointer
-            ${path=='/dashboard/upgrade'&&'text-primary font-bold'}
+            ${path == '/dashboard/upgrade' && 'text-primary font-bold'}
             `}>Upgrade</li>
-            </Link>
-            <Link href={"/dashboard/preparation"}>
-            <li className={`hover:text-primary hover:font-bold transition-all
+        </Link>
+        <Link href={"/dashboard/preparation"}>
+          <li className={`hover:text-primary hover:font-bold transition-all
             cursor-pointer
-            ${path=='/dashboard/preparation'&&'text-primary font-bold'}
+            ${path == '/dashboard/preparation' && 'text-primary font-bold'}
             `}>Prep Tools</li>
-            </Link>
-            <Link href="/#how-it-works">
-              <li className={`hover:text-primary hover:font-bold transition-all
+        </Link>
+        <Link href="/#how-it-works">
+          <li className={`hover:text-primary hover:font-bold transition-all
               cursor-pointer
-              ${path=='/dashboard/how'&&'text-primary font-bold'}
+              ${path == '/dashboard/how' && 'text-primary font-bold'}
               `}>How it Works?</li>
-            </Link>
-        </ul>
-        <div className='flex items-center gap-4'>
-          <ThemeToggle />
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
-          <SignedOut>
-            <SignInButton mode="modal">
-              <Button>Sign In</Button>
-            </SignInButton>
-          </SignedOut>
-        </div>
+        </Link>
+      </ul>
+      <div className='flex items-center gap-4'>
+        <ThemeToggle />
+        <SignedIn>
+          <UserButton />
+        </SignedIn>
+        <SignedOut>
+          <SignInButton mode="modal">
+            <Button>Sign In</Button>
+          </SignInButton>
+        </SignedOut>
+      </div>
     </div>
   )
 }
