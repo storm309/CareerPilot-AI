@@ -36,21 +36,21 @@ function Dashboard() {
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-start gap-2">
+          <div className="bg-card text-card-foreground p-6 rounded-2xl border shadow-sm flex flex-col justify-center items-start gap-2">
             <div className="flex items-center gap-2 text-indigo-600 font-semibold"><Briefcase className="w-5 h-5"/> Total Interviews</div>
-            <span className="text-3xl font-bold text-slate-800">{stats.totalInterviews}</span>
+            <span className="text-3xl font-bold">{stats.totalInterviews}</span>
           </div>
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-start gap-2">
+          <div className="bg-card text-card-foreground p-6 rounded-2xl border shadow-sm flex flex-col justify-center items-start gap-2">
             <div className="flex items-center gap-2 text-green-600 font-semibold"><TrendingUp className="w-5 h-5"/> Average Score</div>
-            <span className="text-3xl font-bold text-slate-800">{stats.averageScore} / 10</span>
+            <span className="text-3xl font-bold">{stats.averageScore} / 10</span>
           </div>
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-start gap-2">
+          <div className="bg-card text-card-foreground p-6 rounded-2xl border shadow-sm flex flex-col justify-center items-start gap-2">
             <div className="flex items-center gap-2 text-purple-600 font-semibold"><PenTool className="w-5 h-5"/> Grammar Checks</div>
-            <span className="text-3xl font-bold text-slate-800">{stats.grammarUsage}</span>
+            <span className="text-3xl font-bold">{stats.grammarUsage}</span>
           </div>
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-start gap-2">
+          <div className="bg-card text-card-foreground p-6 rounded-2xl border shadow-sm flex flex-col justify-center items-start gap-2">
             <div className="flex items-center gap-2 text-blue-600 font-semibold"><Mail className="w-5 h-5"/> Emails Written</div>
-            <span className="text-3xl font-bold text-slate-800">{stats.emailUsage}</span>
+            <span className="text-3xl font-bold">{stats.emailUsage}</span>
           </div>
         </div>
       )}
@@ -60,7 +60,7 @@ function Dashboard() {
       </div>
 
       <div className="mt-10">
-        <h3 className="text-xl font-bold text-slate-800 mb-4">Your Recent Interviews</h3>
+        <h3 className="text-xl font-bold mb-4">Your Recent Interviews</h3>
         <InterviewList />
       </div>
     </div>

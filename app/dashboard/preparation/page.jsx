@@ -81,10 +81,10 @@ function Preparation() {
   return (
     <div className='p-6 md:p-10 max-w-5xl mx-auto'>
       <div className="mb-8">
-        <h2 className='text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-600 tracking-tight flex items-center gap-2'>
-          <Sparkles className="text-blue-700" /> AI Prep Tools
+        <h2 className='text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-600 dark:from-blue-400 dark:to-indigo-300 tracking-tight flex items-center gap-2'>
+          <Sparkles className="text-blue-700 dark:text-blue-400" /> AI Prep Tools
         </h2>
-        <p className='text-slate-500 mt-2 font-medium'>
+        <p className='text-slate-500 dark:text-slate-400 mt-2 font-medium'>
           Sharpen your communication skills before the interview. Choose a tool below.
         </p>
       </div>
@@ -92,14 +92,14 @@ function Preparation() {
       <div className="flex gap-4 mb-6">
         <Button 
           variant={mode === "grammar" ? "default" : "outline"}
-          className={mode === "grammar" ? "bg-indigo-600 text-white" : "text-slate-600"}
+          className={mode === "grammar" ? "bg-indigo-600 text-white" : "text-slate-600 dark:text-slate-300 dark:border-slate-700"}
           onClick={() => setMode("grammar")}
         >
           <PenTool className="w-4 h-4 mr-2" /> Grammar Checker
         </Button>
         <Button 
           variant={mode === "email" ? "default" : "outline"}
-          className={mode === "email" ? "bg-indigo-600 text-white" : "text-slate-600"}
+          className={mode === "email" ? "bg-indigo-600 text-white" : "text-slate-600 dark:text-slate-300 dark:border-slate-700"}
           onClick={() => setMode("email")}
         >
           <Mail className="w-4 h-4 mr-2" /> Email Writer
@@ -109,7 +109,7 @@ function Preparation() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Input Section */}
         <div className="flex flex-col gap-4">
-          <label className="font-semibold text-slate-700">
+          <label className="font-semibold text-slate-700 dark:text-slate-300">
             {mode === "grammar" ? "Enter your text to check:" : "Paste your email draft:"}
           </label>
           <Textarea 
@@ -128,28 +128,28 @@ function Preparation() {
         </div>
 
         {/* Output Section */}
-        <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 shadow-inner h-full min-h-[300px]">
+        <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-inner h-full min-h-[300px]">
           {feedback ? (
             <div className="space-y-6">
               <div>
-                <h3 className="font-bold text-green-700 flex items-center gap-2 mb-2">
+                <h3 className="font-bold text-green-700 dark:text-green-500 flex items-center gap-2 mb-2">
                   <CheckCircle className="w-5 h-5" /> Polished Version
                 </h3>
-                <div className="bg-white p-4 rounded-xl border border-green-200 shadow-sm text-slate-800 whitespace-pre-wrap">
+                <div className="bg-white dark:bg-slate-950 p-4 rounded-xl border border-green-200 dark:border-green-900 shadow-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
                   {feedback.correctedText}
                 </div>
               </div>
               <div>
-                <h3 className="font-bold text-indigo-700 flex items-center gap-2 mb-2">
+                <h3 className="font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-2 mb-2">
                   <Sparkles className="w-5 h-5" /> Expert Feedback
                 </h3>
-                <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-slate-700 whitespace-pre-wrap">
+                <div className="bg-indigo-50 dark:bg-slate-800 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900 text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
                   {feedback.feedback}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400">
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-600">
               <PenTool className="w-16 h-16 mb-4 opacity-20" />
               <p>Your results will appear here.</p>
             </div>

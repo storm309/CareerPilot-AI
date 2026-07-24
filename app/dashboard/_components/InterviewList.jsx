@@ -28,7 +28,7 @@ function InterviewList() {
   return (
     <div className="mt-12">
         <div className="flex items-center gap-2 mb-6">
-            <h2 className='font-bold text-xl text-slate-800'>Previous Mock Interviews</h2>
+            <h2 className='font-bold text-xl text-slate-800 dark:text-slate-200'>Previous Mock Interviews</h2>
         </div>
 
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
