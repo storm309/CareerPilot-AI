@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from "@/components/ui/textarea";
 import { createChatSession } from '@/utils/Geminimodel';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, Sparkles, Plus } from 'lucide-react';
 import { insertMockInterview } from '@/actions/dbActions';
 import { v4 as uuidv4 } from 'uuid';
 import { useUser } from '@clerk/nextjs';
@@ -82,40 +82,48 @@ function AddNewInterview() {
     return (
         <div>
             <div
-                className='p-10 border rounded-lg bg-secondary hover:scale-105 hover:shadow-md cursor-pointer transition-all'
+                className='p-8 border-2 border-dashed border-indigo-200 rounded-2xl bg-indigo-50/50 hover:bg-indigo-50 hover:border-indigo-400 hover:scale-[1.02] hover:shadow-lg cursor-pointer transition-all duration-300 flex items-center justify-center gap-2 group'
                 onClick={() => setOpenDialog(true)}
             >
-                <h2 className='text-lg text-center'>+ Add new</h2>
+                <div className="bg-indigo-100 p-2 rounded-full group-hover:bg-indigo-600 transition-colors duration-300">
+                    <Plus className="text-indigo-600 group-hover:text-white transition-colors" size={24} />
+                </div>
+                <h2 className='text-lg font-semibold text-indigo-700 group-hover:text-indigo-900 transition-colors'>Add New</h2>
             </div>
 
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <DialogContent className="bg-white max-w-2xl">
+                <DialogContent className="bg-white max-w-2xl rounded-2xl border-none shadow-2xl">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold">Tell us about your Job Interview</DialogTitle>
-                        <DialogDescription className="text-gray-500">
+                        <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                            <Sparkles className="text-indigo-600" />
+                            Tell us about your Job Interview
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-500">
                             Add the details below and our AI will generate 5 tailored interview questions for you.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <form onSubmit={onSubmit} className="mt-4 space-y-4">
+                    <form onSubmit={onSubmit} className="mt-4 space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Job Role / Position</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Job Role / Position</label>
                             <Input
                                 placeholder="Ex. Full Stack Developer"
                                 required
                                 onChange={(e) => setJobpost(e.target.value)}
+                                className="focus-visible:ring-indigo-600 border-slate-200"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Job Description / Tech Stack</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Job Description / Tech Stack</label>
                             <Textarea
                                 placeholder="Ex. React, Node.js, PostgreSQL, REST APIs..."
                                 required
                                 onChange={(e) => setJobDescription(e.target.value)}
+                                className="focus-visible:ring-indigo-600 border-slate-200 min-h-[100px]"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">Years of Experience</label>
                             <Input
                                 placeholder="Ex. 3"
                                 min="0"
@@ -123,14 +131,15 @@ function AddNewInterview() {
                                 type="number"
                                 required
                                 onChange={(e) => setExperience(e.target.value)}
+                                className="focus-visible:ring-indigo-600 border-slate-200"
                             />
                         </div>
 
-                        <div className='flex gap-3 justify-end pt-2'>
-                            <Button type="button" variant="outline" onClick={() => setOpenDialog(false)}>
+                        <div className='flex gap-4 justify-end pt-4 border-t border-slate-100'>
+                            <Button type="button" variant="ghost" onClick={() => setOpenDialog(false)} className="text-slate-600 hover:text-slate-900">
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={loading}>
+                            <Button type="submit" disabled={loading} className="bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all">
                                 {loading
                                     ? <><LoaderCircle className='animate-spin mr-2 h-4 w-4' /> Generating Questions...</>
                                     : 'Start Interview 🚀'}

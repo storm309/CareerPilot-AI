@@ -78,7 +78,15 @@ function RecordAnswerSection({ mockinterviewquestions, activequestionindex, inte
       return; // Exit the function
     }
   
-    const feedbackPrompt = `Question:${mockinterviewquestions[activequestionindex]?.question} Answer:${userAnswer}, Depends on question and user answer for given interview question please give us rating for answer and feedback in JSON format with rating and feedback fields.Make sure that answer is in JSON format only.`;
+    const feedbackPrompt = `Act as a strict, professional Senior Technical HR Manager. 
+Question: ${mockinterviewquestions[activequestionindex]?.question} 
+User's Answer: ${userAnswer}
+
+Provide a harsh but constructive evaluation of the user's answer.
+1. Rate the answer from 1-10 (be strict, 10 is only for flawless answers).
+2. Give detailed feedback pointing out grammatical errors, lack of depth, and technical inaccuracies.
+3. Suggest the ideal professional phrasing.
+Return ONLY in JSON format with two fields: 'rating' (number or string) and 'feedback' (string).`;
   
     try {
       const session = createChatSession();

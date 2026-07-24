@@ -51,7 +51,14 @@ export default function Page() {
           <div className="max-w-xl lg:max-w-3xl">
             <div className="relative -mt-16 block lg:hidden">
             </div>
-            <SignIn />
+            <SignIn 
+              appearance={{
+                elements: {
+                  formButtonPrimary: 'bg-indigo-600 hover:bg-indigo-700 text-sm normal-case',
+                  card: 'shadow-xl border border-slate-100 rounded-2xl'
+                }
+              }} 
+            />
           </div>
         </main>
       </div>

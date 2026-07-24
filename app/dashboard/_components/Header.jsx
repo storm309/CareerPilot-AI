@@ -37,6 +37,12 @@ function Header() {
             ${path=='/dashboard/upgrade'&&'text-primary font-bold'}
             `}>Upgrade</li>
             </Link>
+            <Link href={"/dashboard/preparation"}>
+            <li className={`hover:text-primary hover:font-bold transition-all
+            cursor-pointer
+            ${path=='/dashboard/preparation'&&'text-primary font-bold'}
+            `}>Prep Tools</li>
+            </Link>
             <Link href="/#how-it-works">
               <li className={`hover:text-primary hover:font-bold transition-all
               cursor-pointer

@@ -5,10 +5,22 @@ import Webcam from 'react-webcam';
 import { Lightbulb, WebcamIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { ShieldAlert } from 'lucide-react';
 
 function Interview({ params }) {
   const [interviewdata, setInterviewdata] = React.useState();
   const [webcamenabled, setWebcamenabled] = React.useState(false);
+  const [openModal, setOpenModal] = React.useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     console.log(params);
@@ -76,10 +88,35 @@ function Interview({ params }) {
 
       </div>
       <div className='flex justify-end items-end'>
-        <Link href={`/dashboard/interview/${params.interviewid}/start`}>
-          <Button> Start Interview </Button>
-        </Link>
+        <Button onClick={() => setOpenModal(true)}> Start Interview </Button>
       </div>
+
+      <Dialog open={openModal} onOpenChange={setOpenModal}>
+        <DialogContent className="max-w-2xl bg-white rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-red-600">
+              <ShieldAlert className="w-8 h-8" />
+              Anti-Cheat & Terms of Service
+            </DialogTitle>
+            <DialogDescription className="text-slate-600 pt-4 text-base space-y-3">
+              <p>To ensure a fair and realistic interview environment, please note the following strict rules:</p>
+              <ul className="list-disc pl-5 space-y-2 font-medium text-slate-800">
+                <li><strong>Screen Sharing is Required:</strong> You will be asked to share your screen on the next page. Refusal will terminate the interview.</li>
+                <li><strong>No Tab Switching:</strong> Navigating away from the interview tab is strictly monitored. Multiple warnings will lead to disqualification.</li>
+                <li><strong>Camera & Mic:</strong> Must remain on for the duration of the interview.</li>
+                <li><strong>No External Help:</strong> AI-based cheating or reading from scripts is strictly prohibited.</li>
+              </ul>
+              <p className="pt-2 text-sm text-slate-500">By clicking "I Agree", you consent to these terms and authorize screen monitoring.</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6 flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setOpenModal(false)}>Cancel</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => router.push(`/dashboard/interview/${params.interviewid}/start`)}>
+              I Agree, Start Interview
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
