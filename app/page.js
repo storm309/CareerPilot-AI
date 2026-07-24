@@ -3,8 +3,16 @@ import Image from "next/image";
 import LandingHeader from "./_components/LandingHeader";
 import { AtomIcon, ReceiptText, Focus, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
 export default function Home() {
+  const { userId } = auth();
+
+  if (userId) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-50 via-white to-cyan-50 dark:from-background dark:via-background dark:to-background">
       <LandingHeader />
