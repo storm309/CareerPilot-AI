@@ -17,6 +17,15 @@ function Upgrade() {
                 ))}
                 </div>
             </div>
+
+            <div className="mt-8 text-center text-gray-600 dark:text-gray-400">
+                <p>For payments or any queries, you can contact us via WhatsApp:</p>
+                <p className="font-bold text-lg mt-2 text-indigo-600 dark:text-indigo-400">
+                    <a href="https://wa.me/9182529680774" target="_blank" rel="noreferrer">
+                        +91 82529680774
+                    </a>
+                </p>
+            </div>
         </div>
     )
 }
