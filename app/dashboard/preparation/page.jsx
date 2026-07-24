@@ -40,15 +40,15 @@ function Preparation() {
       const session = createChatSession();
       const result = await session.sendMessage(prompt);
       let responseText = await result.response.text();
-      
+
       // Clean up markdown formatting if Gemini includes it
       if (responseText.includes('```json')) {
-          responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       }
 
       const jsonResponse = JSON.parse(responseText);
       setFeedback(jsonResponse);
-      
+
       // Save to database
       if (user?.primaryEmailAddress?.emailAddress) {
         if (mode === "grammar") {
@@ -90,14 +90,14 @@ function Preparation() {
       </div>
 
       <div className="flex gap-4 mb-6">
-        <Button 
+        <Button
           variant={mode === "grammar" ? "default" : "outline"}
           className={mode === "grammar" ? "bg-indigo-600 text-white" : "text-slate-600 dark:text-slate-300 dark:border-slate-700"}
           onClick={() => setMode("grammar")}
         >
           <PenTool className="w-4 h-4 mr-2" /> Grammar Checker
         </Button>
-        <Button 
+        <Button
           variant={mode === "email" ? "default" : "outline"}
           className={mode === "email" ? "bg-indigo-600 text-white" : "text-slate-600 dark:text-slate-300 dark:border-slate-700"}
           onClick={() => setMode("email")}
@@ -112,13 +112,13 @@ function Preparation() {
           <label className="font-semibold text-slate-700 dark:text-slate-300">
             {mode === "grammar" ? "Enter your text to check:" : "Paste your email draft:"}
           </label>
-          <Textarea 
+          <Textarea
             className="min-h-[300px] p-4 text-base focus-visible:ring-indigo-500 rounded-xl"
             placeholder={mode === "grammar" ? "I has been working here for 3 year..." : "Hi Sir, I want a job in ur company..."}
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
-          <Button 
+          <Button
             className="bg-slate-800 hover:bg-slate-900 text-white py-6 rounded-xl text-lg"
             onClick={handleAnalyze}
             disabled={loading}
