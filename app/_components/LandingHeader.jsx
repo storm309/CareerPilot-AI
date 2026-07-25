@@ -10,19 +10,21 @@ function LandingHeader() {
   return (
     <div className='flex p-4 items-center justify-between bg-transparent backdrop-blur-md shadow-sm sticky top-0 z-50'>
         <div className='flex items-center gap-2'>
-            <Image src={'/logo.png'} width={160} height={100} alt='logo' className='h-12 w-auto object-contain dark:invert' />
+            <Link href="/">
+              <Image src={'/logo.png'} width={160} height={100} alt='logo' className='h-12 w-auto object-contain dark:invert' />
+            </Link>
         </div>
         <ul className='hidden md:flex gap-8'>
-            <Link href="#how-it-works">
-              <li className='hover:text-primary hover:font-bold transition-all cursor-pointer text-slate-700 dark:text-slate-300'>
+            <li className='hover:text-primary hover:font-bold transition-all cursor-pointer text-slate-700 dark:text-slate-300'>
+              <Link href="#how-it-works">
                   How it Works
-              </li>
-            </Link>
-            <Link href="#features">
-              <li className='hover:text-primary hover:font-bold transition-all cursor-pointer text-slate-700 dark:text-slate-300'>
+              </Link>
+            </li>
+            <li className='hover:text-primary hover:font-bold transition-all cursor-pointer text-slate-700 dark:text-slate-300'>
+              <Link href="#features">
                   Features
-              </li>
-            </Link>
+              </Link>
+            </li>
         </ul>
         <div className='flex items-center gap-4'>
           <ThemeToggle />
