@@ -3,6 +3,6 @@ export default {
     schema: "./utils/schema.js",
     dialect: 'postgresql',
     dbCredentials: {
-      url: "postgresql://postgres:Helloshivam%4033@db.dyjafrghuauuerdwvzrv.supabase.co:5432/postgres",
+      url: "postgresql://postgres.dyjafrghuauuerdwvzrv:Hellobrother%403344@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres",
     }
   }
