@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-const pdfParse = require('pdf-parse');
+
+// Force Node.js runtime - pdf-parse requires Node.js native modules
+export const runtime = 'nodejs';
 
 export async function POST(req) {
     try {
@@ -10,14 +12,34 @@ export async function POST(req) {
             return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
         }
 
-        const buffer = await file.arrayBuffer();
+        // Check file type
+        if (file.type !== 'application/pdf') {
+            return NextResponse.json({ error: "Only PDF files are supported" }, { status: 400 });
+        }
 
-        // pdfParse requires a Buffer, not ArrayBuffer directly in some envs
-        const parsedData = await pdfParse(Buffer.from(buffer));
+        // Check file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            return NextResponse.json({ error: "File too large. Maximum 5MB allowed." }, { status: 400 });
+        }
 
-        return NextResponse.json({ text: parsedData.text });
+        const buffer = Buffer.from(await file.arrayBuffer());
+
+        // Dynamically import pdf-parse to avoid issues with Next.js bundling
+        const pdfParse = (await import('pdf-parse')).default;
+        const parsedData = await pdfParse(buffer);
+
+        if (!parsedData.text || parsedData.text.trim().length === 0) {
+            return NextResponse.json({ error: "Could not extract text from PDF. The file may be scanned/image-based." }, { status: 422 });
+        }
+
+        return NextResponse.json({ 
+            text: parsedData.text.trim(),
+            pages: parsedData.numpages
+        });
     } catch (error) {
         console.error("PDF Parsing error:", error);
-        return NextResponse.json({ error: "Failed to parse PDF" }, { status: 500 });
+        return NextResponse.json({ 
+            error: "Failed to parse PDF. Please try a different file." 
+        }, { status: 500 });
     }
 }

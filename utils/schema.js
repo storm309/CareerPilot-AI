@@ -1,9 +1,4 @@
 import { pgTable, serial, text, varchar, timestamp } from "drizzle-orm/pg-core"
-import { sql } from "drizzle-orm"
-
-
-
-
 
 export const mockinterview = pgTable("mockinterview", {
 	id: serial("id").primaryKey().notNull(),

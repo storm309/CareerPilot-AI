@@ -3,6 +3,11 @@ export default {
     schema: "./utils/schema.js",
     dialect: 'postgresql',
     dbCredentials: {
-      url: "postgresql://postgres.dyjafrghuauuerdwvzrv:Helloshivam@33@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres",
+      host: "aws-1-ap-southeast-2.pooler.supabase.com",
+      port: 5432,
+      database: "postgres",
+      user: "postgres.dyjafrghuauuerdwvzrv",
+      password: "Helloshivam@33",
+      ssl: "require",
     }
   }
