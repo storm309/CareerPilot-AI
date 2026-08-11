@@ -10,7 +10,7 @@ export async function insertMockInterview(data) {
     return output;
   } catch (error) {
     console.error("Error inserting mock interview:", error);
-    throw new Error(error.message || "Failed to insert mock interview into database");
+    return { error: error.message || "Failed to insert mock interview into database" };
   }
 }
 

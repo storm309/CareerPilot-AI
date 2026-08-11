@@ -86,6 +86,12 @@ function AddNewInterview() {
                     createdat: moment().format('YYYY-MM-DD HH:mm:ss')
                 });
 
+                if (output && output.error) {
+                    toast.error("Database Error: " + output.error);
+                    setLoading(false);
+                    return;
+                }
+
                 if (output && output[0]?.mockId) {
                     toast.success("Interview created successfully!");
                     setOpenDialog(false);
