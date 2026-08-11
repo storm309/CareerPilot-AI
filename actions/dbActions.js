@@ -23,7 +23,7 @@ export async function getInterviewList(email) {
     return response;
   } catch (error) {
     console.error("Error fetching interview list:", error);
-    throw error;
+    throw new Error(error.message || "Failed to fetch interview list");
   }
 }
 
@@ -35,7 +35,7 @@ export async function getInterviewDetails(mockid) {
     return result;
   } catch (error) {
     console.error("Error fetching interview details:", error);
-    throw error;
+    throw new Error(error.message || "Failed to fetch interview details");
   }
 }
 
@@ -45,7 +45,7 @@ export async function insertUserAnswer(data) {
     return resp;
   } catch (error) {
     console.error("Error inserting user answer:", error);
-    throw error;
+    throw new Error(error.message || "Failed to save user answer");
   }
 }
 
@@ -58,7 +58,7 @@ export async function getFeedbackByMockId(mockid) {
     return result;
   } catch (error) {
     console.error("Error fetching feedback:", error);
-    throw error;
+    throw new Error(error.message || "Failed to fetch feedback");
   }
 }
 
@@ -68,7 +68,7 @@ export async function insertGrammarHistory(data) {
     return resp;
   } catch (error) {
     console.error("Error inserting grammar history:", error);
-    throw error;
+    throw new Error(error.message || "Failed to save grammar history");
   }
 }
 
@@ -78,7 +78,7 @@ export async function insertEmailHistory(data) {
     return resp;
   } catch (error) {
     console.error("Error inserting email history:", error);
-    throw error;
+    throw new Error(error.message || "Failed to save email history");
   }
 }
 
@@ -107,7 +107,7 @@ export async function getDashboardStats(email) {
       averageScore,
       grammarUsage: grammar.length,
       emailUsage: emailHist.length,
-      latestInterview: interviews.length > 0 ? interviews[0] : null // assuming it's ordered by default, but we should sort it
+      latestInterview: interviews.length > 0 ? interviews[0] : null
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
@@ -124,6 +124,6 @@ export async function deleteInterview(mockid) {
     return true;
   } catch (error) {
     console.error("Error deleting interview:", error);
-    throw error;
+    throw new Error(error.message || "Failed to delete interview");
   }
 }
