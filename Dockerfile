@@ -20,6 +20,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # Build the Next.js application
+ENV BUILD_STANDALONE true
 RUN npm run build
 
 # Production image, copy all the files and run next

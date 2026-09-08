@@ -1,191 +1,241 @@
 "use client";
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import Image from 'next/image';
-import React, { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
-import useSpeechToText from 'react-hook-speech-to-text';
-import { Mic, StopCircle, Send } from 'lucide-react';
-import { toast } from 'sonner';
-import { useUser } from '@clerk/clerk-react';
-import { createChatSession } from '@/utils/Geminimodel';
-import { insertUserAnswer } from '@/actions/dbActions';
-import moment from 'moment';
 
+import { CheckCircle2, LoaderCircle, Mic, Send, StopCircle, VideoOff } from "lucide-react";
+import dynamic from "next/dynamic";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import useSpeechToText from "react-hook-speech-to-text";
+import { toast } from "sonner";
 
-// Dynamically import Webcam so it doesn't load on the server
-const Webcam = dynamic(() => import('react-webcam'), { ssr: false });
+import { submitAnswer } from "@/actions/aiActions";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
-function RecordAnswerSection({ mockinterviewquestions, activequestionindex, interviewdata }) {
-  const [userAnswer, setUserAnswer] = useState('');
-  const { user } = useUser(); // Assuming you have a user context hook
+// react-webcam touches `navigator` at import time, so it must stay client-only.
+const Webcam = dynamic(() => import("react-webcam"), {
+  ssr: false,
+  loading: () => <div className="h-[260px] w-full animate-pulse bg-muted" />,
+});
+
+const MIN_ANSWER_LENGTH = 10;
+
+function RecordAnswerSection({
+  questions,
+  activeIndex,
+  mockid,
+  attempt,
+  onAnswerSaved,
+}) {
+  // Drafts are keyed by question, so moving between questions no longer carries
+  // the previous answer over into the next one.
+  const [drafts, setDrafts] = useState({});
+  const [results, setResults] = useState({});
   const [loading, setLoading] = useState(false);
-  const [webcamError, setWebcamError] = useState('');
-  
+  const [webcamError, setWebcamError] = useState(false);
+  const baseTextRef = useRef("");
+
+  const answer = drafts[activeIndex] ?? "";
+  const result = results[activeIndex] ?? null;
+
   const {
-    error,
+    error: speechError,
     interimResult,
     isRecording,
-    results,
+    results: speechResults,
     startSpeechToText,
     stopSpeechToText,
-    setResults,
+    setResults: setSpeechResults,
   } = useSpeechToText({
     continuous: true,
     useLegacyResults: false,
-    interimResults: true, // ensure interim results are processed
+    interimResults: true,
   });
 
-  // Update user answer from speech-to-text results safely
+  const setAnswer = useCallback(
+    (value) => {
+      setDrafts((current) => ({ ...current, [activeIndex]: value }));
+    },
+    [activeIndex]
+  );
+
+  // Transcripts are appended to whatever is already in the box. The old effect
+  // replaced the whole textarea, wiping out anything typed by hand.
   useEffect(() => {
-    if (results && results.length > 0) {
-      setUserAnswer(results.map((r) => r.transcript).join(' '));
-    }
-  }, [results]);
+    if (!speechResults?.length) return;
+
+    const transcript = speechResults.map((entry) => entry.transcript).join(" ");
+    const merged = `${baseTextRef.current} ${transcript}`.replace(/\s+/g, " ").trim();
+
+    setDrafts((current) => ({ ...current, [activeIndex]: merged }));
+  }, [speechResults, activeIndex]);
+
+  // Recording must not bleed across questions.
+  useEffect(() => {
+    if (isRecording) stopSpeechToText();
+    setSpeechResults([]);
+    baseTextRef.current = "";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex]);
 
   useEffect(() => {
-    if(isRecording){
-      toast.info('Answer should be more than 10 characters');
+    if (speechError) {
+      toast.error("Voice input is not available in this browser. You can type your answer instead.");
     }
-  }, [isRecording]);
+  }, [speechError]);
 
-  const toggleRecording = async () => {
+  const toggleRecording = () => {
     if (isRecording) {
       stopSpeechToText();
-      console.log('Recording stopped');
-    } else {
-      startSpeechToText();
-      console.log('Recording started');
+      return;
     }
+
+    baseTextRef.current = answer;
+    setSpeechResults([]);
+    startSpeechToText();
+    toast.info("Recording. Speak clearly, then stop when you're done.");
   };
 
-  const updateUserAnswerInDb = async () => {
+  const handleSubmit = async () => {
+    if (loading) return;
+
+    if (isRecording) stopSpeechToText();
+
+    const trimmed = answer.trim();
+    if (trimmed.length < MIN_ANSWER_LENGTH) {
+      toast.error(`Your answer needs at least ${MIN_ANSWER_LENGTH} characters.`);
+      return;
+    }
+
     setLoading(true);
-    console.log('User answer ready to save:', userAnswer);
-  
-    // Check if interviewdata and mockid are valid
-    if (!interviewdata || !interviewdata.mockid) {
-      console.error("interviewdata or mockid is undefined");
-      toast.error("Interview data is not available. Please try again.");
-      setLoading(false);
-      return; // Exit the function
-    }
-  
-    const feedbackPrompt = `Act as a strict, professional Senior Technical HR Manager. 
-Question: ${mockinterviewquestions[activequestionindex]?.question} 
-User's Answer: ${userAnswer}
-
-Provide a harsh but constructive evaluation of the user's answer.
-1. Rate the answer from 1-10 (be strict, 10 is only for flawless answers) -> map to "score".
-2. Identify core "strengths".
-3. Identify core "weaknesses".
-4. Suggest concrete "improvements".
-5. Provide the "expectedAnswer" (how a senior engineer would answer it).
-6. Assess their "confidenceLevel" (Low/Medium/High) based on answer structure/wording.
-
-Return ONLY in JSON format with fields: 'score' (string), 'feedback' (string - general summary), 'strengths' (string), 'weaknesses' (string), 'improvements' (string), 'expectedAnswer' (string), 'confidenceLevel' (string).`;
-  
     try {
-      const session = createChatSession();
-      const result = await session.sendMessage(feedbackPrompt);
-      let responseText = await result.response.text();
-    
-      if (responseText.includes('```json')) {
-        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      }
-      const jsonResponse = JSON.parse(responseText);
-    
-      const resp = await insertUserAnswer({
-        mockidRef: interviewdata.mockid,
-        question: mockinterviewquestions[activequestionindex]?.question,
-        correctanswer: jsonResponse?.expectedAnswer || mockinterviewquestions[activequestionindex]?.answer,
-        useranswer: userAnswer,
-        feedback: jsonResponse?.feedback,
-        rating: jsonResponse?.score || jsonResponse?.rating,
-        strengths: jsonResponse?.strengths,
-        weaknesses: jsonResponse?.weaknesses,
-        improvements: jsonResponse?.improvements,
-        confidenceLevel: jsonResponse?.confidenceLevel,
-        userEmail: user?.primaryEmailAddress?.emailAddress,
-        createdat: moment().format('YYYY-MM-DD HH:mm:ss')
+      const response = await submitAnswer({
+        mockid,
+        questionIndex: activeIndex,
+        userAnswer: trimmed,
+        attempt,
       });
-  
-      if (resp) {
-        toast.success('Answer recorded successfully');
-        setUserAnswer('');
-        setResults([]);
+
+      if (!response?.success) {
+        toast.error(response?.error || "Could not save your answer. Please try again.");
+        return;
       }
-      setLoading(false);
-    
-    // Simulate API call to save
-    setResults([]); // Clear the results
-    setTimeout(() => {
-      setLoading(false);
-      toast.success('Click on Next Question to continue');
-    }, 1000);
-    
-    } catch (parseError) {
-      console.error("Error parsing JSON:", parseError);
-      toast.error("There was an error parsing the feedback. Please try again.");
+
+      setResults((current) => ({ ...current, [activeIndex]: response }));
+      onAnswerSaved?.(questions[activeIndex]?.question, response);
+      toast.success(`Answer saved. Score: ${response.score ?? "-"}/10`);
+    } catch (error) {
+      console.error("Answer submission failed:", error);
+      toast.error("Could not reach the server. Please check your connection.");
+    } finally {
       setLoading(false);
     }
   };
 
-  // Error handler for webcam
-  const handleWebcamError = (error) => {
-    console.error('Webcam error:', error);
-    setWebcamError('Could not access webcam. Please check permissions and try again.');
-    toast.error('Could not access webcam. Please check permissions.');
-  };
+  const tooShort = answer.trim().length < MIN_ANSWER_LENGTH;
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <div className="flex flex-col mt-20 justify-center items-center rounded-lg p-5 my-15 bg-black">
+    <div className="flex flex-col gap-6">
+      <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-2xl border border-border bg-slate-950">
         {webcamError ? (
-          <p className="text-red-500">{webcamError}</p>
+          <div className="flex flex-col items-center gap-2 p-6 text-center text-slate-300">
+            <VideoOff className="h-10 w-10 opacity-60" />
+            <p className="text-sm">
+              Camera unavailable. Check your browser permissions - you can still answer by
+              typing or by voice.
+            </p>
+          </div>
         ) : (
-          <>
-            <Image src="/webcam.png" width={200} height={200} className="absolute" alt="Webcam Placeholder" />
-            <Webcam
-              mirrored={true}
-              onUserMediaError={handleWebcamError} // Error handler
-              style={{
-                width: '100%',
-                height: 300,
-                zIndex: 10,
-              }}
-            />
-          </>
+          <Webcam
+            mirrored
+            audio={false}
+            onUserMediaError={() => setWebcamError(true)}
+            className="h-full w-full object-cover"
+          />
         )}
+
+        {isRecording ? (
+          <span className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+            REC
+          </span>
+        ) : null}
       </div>
 
-      <div className="w-full mt-8">
-        <label className="text-sm font-semibold text-slate-700 mb-2 block">Your Answer (Edit before submitting)</label>
-        <Textarea 
-          value={userAnswer}
-          onChange={(e) => setUserAnswer(e.target.value)}
-          className="min-h-[150px] p-4 text-base focus-visible:ring-indigo-500 rounded-xl w-full"
-          placeholder="Start recording, or type your answer manually here..."
+      <div>
+        <div className="mb-1.5 flex items-end justify-between gap-2">
+          <label htmlFor="answer" className="text-sm font-semibold">
+            Your answer
+          </label>
+          <span
+            className={`text-xs tabular-nums ${tooShort ? "text-muted-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
+          >
+            {answer.trim().length} characters
+          </span>
+        </div>
+        <Textarea
+          id="answer"
+          value={answer}
+          onChange={(event) => setAnswer(event.target.value)}
+          readOnly={isRecording}
+          className="min-h-[160px] rounded-xl p-4 text-base"
+          placeholder="Record your answer, or type it here. You can edit the transcript before submitting."
         />
+        {isRecording && interimResult ? (
+          <p className="mt-2 text-sm italic text-muted-foreground">{interimResult}</p>
+        ) : null}
       </div>
 
-      <div className="flex gap-4 mt-6">
-        <Button variant={isRecording ? "destructive" : "outline"} className="flex gap-2 rounded-xl" onClick={toggleRecording}>
+      <div className="flex flex-wrap gap-3">
+        <Button
+          variant={isRecording ? "destructive" : "outline"}
+          className="gap-2"
+          onClick={toggleRecording}
+          disabled={loading || Boolean(speechError)}
+        >
           {isRecording ? (
-            <><StopCircle className="w-5 h-5" /> Stop Recording</>
+            <>
+              <StopCircle className="h-5 w-5" /> Stop recording
+            </>
           ) : (
-            <><Mic className="w-5 h-5" /> Record Audio</>
+            <>
+              <Mic className="h-5 w-5" /> Record answer
+            </>
           )}
         </Button>
 
-        <Button 
-          className="bg-indigo-600 hover:bg-indigo-700 text-white flex gap-2 rounded-xl"
-          onClick={updateUserAnswerInDb}
-          disabled={loading || userAnswer.length < 10}
-        >
-          {loading ? "Evaluating..." : <><Send className="w-5 h-5" /> Submit Answer</>}
+        <Button className="gap-2" onClick={handleSubmit} disabled={loading || tooShort}>
+          {loading ? (
+            <>
+              <LoaderCircle className="h-5 w-5 animate-spin" /> Grading...
+            </>
+          ) : (
+            <>
+              <Send className="h-5 w-5" /> {result ? "Resubmit answer" : "Submit answer"}
+            </>
+          )}
         </Button>
       </div>
+
+      {result ? (
+        <div className="animate-slide-up rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900 dark:bg-emerald-950/40">
+          <div className="flex flex-wrap items-center gap-3">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <span className="font-semibold">Answer graded</span>
+            <Badge variant={Number(result.score) >= 7 ? "success" : "warning"}>
+              {result.score ?? "-"}/10
+            </Badge>
+            {result.confidenceLevel ? (
+              <Badge variant="outline">Confidence: {result.confidenceLevel}</Badge>
+            ) : null}
+          </div>
+          {result.feedback ? (
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{result.feedback}</p>
+          ) : null}
+          <p className="mt-3 text-xs text-muted-foreground">
+            Full breakdown, including the ideal answer, is on the feedback page.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

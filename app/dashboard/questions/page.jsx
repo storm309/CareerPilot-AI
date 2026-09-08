@@ -1,64 +1,89 @@
 "use client";
-import React from 'react';
 
-const Questions = () => {
+import { ChevronDown, MessageCircleQuestion } from "lucide-react";
+import React from "react";
 
-    const faqsList = [
-        {
-            q: "What is the AI Interview Taker?",
-            a: "The AI Interview Taker is an advanced platform that uses artificial intelligence to simulate real-life job interviews. It provides instant feedback on your responses, helping you prepare for actual interviews by improving your communication and critical thinking skills."
-        },
-        {
-            q: "How does the AI evaluate my answers?",
-            a: "The AI evaluates your responses based on various factors like relevance, clarity, communication style, and domain knowledge. It uses natural language processing (NLP) algorithms to assess your answers and provide constructive feedback."
-        },
-        {
-            q: "Can the AI Interview Taker simulate interviews for different job roles?",
-            a: "Yes! The platform offers tailored interview simulations for a variety of industries and job roles, ranging from technical positions to managerial and creative roles. Simply choose your target role, and the AI will ask relevant questions."
-        },
-        {
-            q: "Is my personal data and interview performance secure?",
-            a: "Absolutely. We prioritize your privacy and ensure that all personal data and interview recordings are encrypted and stored securely. Your information will never be shared with third parties without your consent."
-        },
-        {
-            q: "How can I improve my interview performance using this platform?",
-            a: "After each simulated interview, the AI will provide detailed feedback on your performance. This includes areas for improvement, such as communication style, technical knowledge, and body language (if applicable). You can track your progress over time and practice accordingly."
-        },
-        {
-            q: "Can I access the platform on mobile devices?",
-            a: "Yes, the AI Interview Taker is fully responsive and works on both desktop and mobile devices. You can practice your interview skills anywhere, anytime, with just an internet connection."
-        },
-    ]
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
-    return (
-        <div className="leading-relaxed mt-12 mx-4 md:mx-8">
-            <div className="text-center space-y-3">
-                <h1 className="block text-gray-800 text-3xl font-semibold">
-                    Frequently Asked Questions
-                </h1>
-                <p className="text-gray-500 max-w-lg mx-auto">
-                    Answered all frequently asked questions. Can’t find the answer you’re looking for? feel free to contact us.
-                </p>
-            </div>
-            <div className="relative bg-white rounded-md mt-10 md:max-w-3xl lg:max-w-4xl xl:max-w-5xl sm:mx-auto" style={{boxShadow: '0px 7px 20px 7px #F1F1F1'}}>
-                <div className="grid gap-4 py-8 md:grid-cols-2">
-                    {
-                        faqsList.map((item, idx) => (
-                            <div className="space-y-3 mt-6 px-8" key={idx}>
-                                <h4 className="text-gray-800 text-xl font-semibold ">
-                                    {item.q}
-                                </h4>
-                                <p className="text-gray-500">
-                                    {item.a}
-                                </p>
-                            </div>
-                        ))
-                    }
-                </div>
-                <span className="w-0.5 h-0.7 bg-gray-200 mb-4 absolute top-0 left-0 right-0 hidden md:block"></span>
-            </div>
-        </div>
-    )
+const FAQS = [
+  {
+    q: "How does CareerPilot AI build my questions?",
+    a: "Your job title, job description, years of experience, chosen interview type and difficulty are all sent to Google's Gemini model, which writes questions specific to that role. Upload a resume and it will also ask about the projects and skills listed on it.",
+  },
+  {
+    q: "How is my answer scored?",
+    a: "Each answer is graded on its own against the bar for your stated experience level. You get a score out of 10 plus strengths, weaknesses, concrete improvements, a confidence read and the answer a strong candidate would have given.",
+  },
+  {
+    q: "What is proctoring, and can I skip it?",
+    a: "A proctored run asks to share your screen and puts the page in fullscreen. Switching tabs, losing window focus, leaving fullscreen or stopping the share each count as a warning, and three warnings end the interview. If you would rather just rehearse, choose 'Practice without proctoring' - your answers are still graded and saved.",
+  },
+  {
+    q: "Can I retake an interview?",
+    a: "Yes, as many times as you like. Each full run is saved as a separate attempt, so you can compare a later attempt against an earlier one from the attempt picker on the feedback page.",
+  },
+  {
+    q: "Do I have to speak my answers?",
+    a: "No. Voice recording transcribes into the answer box, but you can type or edit freely before submitting. If your browser does not support speech recognition, typing works exactly the same.",
+  },
+  {
+    q: "Is my data private?",
+    a: "Your interviews, answers and feedback are tied to your signed-in account and only ever returned to you - the server checks ownership on every request. Answers are sent to Google's Gemini API for grading; do not paste anything confidential.",
+  },
+  {
+    q: "Why did my resume upload fail?",
+    a: "Only PDFs up to 5MB are supported, and the text has to be selectable. Scanned or photographed resumes are images with no text layer, so nothing can be read from them. Export a fresh PDF from your editor instead.",
+  },
+  {
+    q: "Does this work on a phone?",
+    a: "The dashboard and prep tools work on any device. For a proctored interview use a desktop browser such as Chrome or Edge - mobile browsers cannot share a screen.",
+  },
+];
+
+export default function Questions() {
+  return (
+    <div className="mx-auto max-w-3xl">
+      <header className="space-y-3 text-center">
+        <MessageCircleQuestion className="mx-auto h-10 w-10 text-primary" />
+        <h1 className="text-3xl font-bold tracking-tight">Frequently asked questions</h1>
+        <p className="mx-auto max-w-lg text-muted-foreground">
+          Everything about how the interviews, scoring and proctoring work.
+        </p>
+      </header>
+
+      <div className="mt-10 space-y-3">
+        {FAQS.map((item) => (
+          <Collapsible
+            key={item.q}
+            className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-sm"
+          >
+            <CollapsibleTrigger className="group flex w-full items-center justify-between gap-4 p-5 text-left font-semibold transition-colors hover:bg-accent">
+              {item.q}
+              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="border-t border-border bg-muted/30 p-5 text-sm leading-relaxed text-muted-foreground">
+              {item.a}
+            </CollapsibleContent>
+          </Collapsible>
+        ))}
+      </div>
+
+      <p className="mt-10 text-center text-sm text-muted-foreground">
+        Still stuck?{" "}
+        <a
+          href="https://wa.me/918252980774"
+          target="_blank"
+          rel="noreferrer noopener"
+          className="font-semibold text-primary underline-offset-4 hover:underline"
+        >
+          Message us on WhatsApp
+        </a>
+        .
+      </p>
+    </div>
+  );
 }
-
-export default Questions;

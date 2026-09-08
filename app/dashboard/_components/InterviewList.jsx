@@ -1,49 +1,88 @@
 "use client";
-import { getInterviewList as fetchInterviewList } from '@/actions/dbActions';
-import { useUser } from '@clerk/clerk-react'
-import { desc, eq } from 'drizzle-orm';
-import React, { useEffect } from 'react'
-import InterviewcardList from './InterviewcardList';
 
+import { AlertCircle, Inbox } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
 
-import { Skeleton } from '@/components/ui/skeleton';
+import { getInterviewList } from "@/actions/dbActions";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import InterviewcardList from "./InterviewcardList";
 
-function InterviewList() {
-    const {user} = useUser();
-    const[interviewList, setInterviewList] = React.useState([]);
-    const [loading, setLoading] = React.useState(true);
+function InterviewList({ refreshKey = 0, onChanged }) {
+  const [interviews, setInterviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    useEffect(() => { 
-        if (user) {
-          GetInterviewList();
-        }
-     }, [user]) 
+  // The email is no longer passed from the browser: the server action reads the
+  // signed-in user from the Clerk session, so the list cannot be spoofed.
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-    const GetInterviewList = async () => {
-        setLoading(true);
-        const response = await fetchInterviewList(user?.primaryEmailAddress?.emailAddress);
-        setInterviewList(response);
-        setLoading(false);
+    try {
+      setInterviews(await getInterviewList());
+    } catch (fetchError) {
+      console.error("Could not load interviews:", fetchError);
+      setError("We couldn't load your interviews.");
+    } finally {
+      setLoading(false);
     }
-  return (
-    <div className="mt-12">
-        <div className="flex items-center gap-2 mb-6">
-            <h2 className='font-bold text-xl text-slate-800 dark:text-slate-200'>Previous Mock Interviews</h2>
-        </div>
+  }, []);
 
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-            {loading ? (
-                [1,2,3].map((item, index) => (
-                    <Skeleton key={index} className="h-[200px] w-full rounded-2xl bg-slate-200" />
-                ))
-            ) : (
-                interviewList && interviewList.map((interview,index) => (
-                    <InterviewcardList key={index} interview={interview} onDelete={GetInterviewList} />
-                ))
-            )}
-        </div>
+  useEffect(() => {
+    load();
+  }, [load, refreshKey]);
+
+  const handleChanged = () => {
+    load();
+    onChanged?.();
+  };
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {[0, 1, 2].map((index) => (
+          <Skeleton key={index} className="h-[190px] w-full rounded-2xl" />
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-10 text-center">
+        <AlertCircle className="h-8 w-8 text-destructive" />
+        <p className="font-medium text-destructive">{error}</p>
+        <Button variant="outline" onClick={load}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+
+  if (interviews.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border p-12 text-center">
+        <Inbox className="h-10 w-10 text-muted-foreground/40" />
+        <p className="font-semibold">No interviews yet</p>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Create your first mock interview above and it will show up here with your scores.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {interviews.map((interview) => (
+        <InterviewcardList
+          key={interview.mockid}
+          interview={interview}
+          onDelete={handleChanged}
+        />
+      ))}
     </div>
-  )
+  );
 }
 
-export default InterviewList
+export default InterviewList;

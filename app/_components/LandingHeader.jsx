@@ -1,47 +1,96 @@
-"use client"
-import { UserButton, SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
-import { Button } from '@/components/ui/button'
-import Image from 'next/image'
-import Link from 'next/link'
-import React from 'react'
-import { ThemeToggle } from '@/components/ThemeToggle'
+"use client";
+
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { Menu, X } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import React, { useState } from "react";
+
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
+
+const LINKS = [
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#features", label: "Features" },
+];
 
 function LandingHeader() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <div className='flex p-4 items-center justify-between bg-transparent backdrop-blur-md shadow-sm sticky top-0 z-50'>
-        <div className='flex items-center gap-2'>
-            <Link href="/">
-              <Image src={'/logo.png'} width={160} height={100} alt='logo' className='h-12 w-auto object-contain dark:invert' />
-            </Link>
-        </div>
-        <ul className='hidden md:flex gap-8'>
-            <li className='hover:text-primary hover:font-bold transition-all cursor-pointer text-slate-700 dark:text-slate-300'>
-              <Link href="#how-it-works">
-                  How it Works
-              </Link>
-            </li>
-            <li className='hover:text-primary hover:font-bold transition-all cursor-pointer text-slate-700 dark:text-slate-300'>
-              <Link href="#features">
-                  Features
-              </Link>
-            </li>
-        </ul>
-        <div className='flex items-center gap-4'>
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-md">
+      <div className="mx-auto flex max-w-screen-xl items-center justify-between gap-4 p-4">
+        <Link href="/" aria-label="CareerPilot AI home">
+          <Image
+            src="/logo.png"
+            width={160}
+            height={100}
+            alt="CareerPilot AI"
+            priority
+            className="h-10 w-auto object-contain dark:invert"
+          />
+        </Link>
+
+        <nav aria-label="Main" className="hidden md:block">
+          <ul className="flex gap-8">
+            {LINKS.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="flex items-center gap-2">
           <ThemeToggle />
           <SignedIn>
             <Link href="/dashboard">
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-6">Go to Dashboard</Button>
+              <Button className="rounded-full px-5">Dashboard</Button>
             </Link>
-            <UserButton />
+            <UserButton afterSignOutUrl="/" />
           </SignedIn>
           <SignedOut>
             <SignInButton mode="modal">
-              <Button className="rounded-full px-6">Sign In</Button>
+              <Button className="rounded-full px-5">Sign in</Button>
             </SignInButton>
           </SignedOut>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
-    </div>
-  )
+      </div>
+
+      {menuOpen ? (
+        <nav aria-label="Mobile" className="border-t border-border bg-background md:hidden">
+          <ul className="flex flex-col p-2">
+            {LINKS.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="block rounded-lg px-4 py-3 text-sm font-medium transition-colors hover:bg-accent"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ) : null}
+    </header>
+  );
 }
 
-export default LandingHeader
+export default LandingHeader;

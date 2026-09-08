@@ -1,157 +1,202 @@
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import LandingHeader from "./_components/LandingHeader";
-import { AtomIcon, ReceiptText, Focus, Sparkles, ShieldCheck, PenTool, Video } from "lucide-react";
-import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
+import {
+  ArrowRight,
+  AtomIcon,
+  Focus,
+  PenTool,
+  ReceiptText,
+  ShieldCheck,
+  Sparkles,
+  Video,
+} from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import LandingHeader from "./_components/LandingHeader";
+
+const STEPS = [
+  {
+    icon: ReceiptText,
+    title: "Add the job details",
+    body: "Paste the job title and description, set your experience, difficulty and how many questions you want. Add a resume and the questions will reference your actual projects.",
+    accent: "text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950",
+  },
+  {
+    icon: Focus,
+    title: "Face the AI interviewer",
+    body: "Answer out loud with your camera and microphone on, or type your answers. Edit the transcript until it reads the way you would actually say it.",
+    accent: "text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-950",
+  },
+  {
+    icon: AtomIcon,
+    title: "Get graded instantly",
+    body: "Every answer comes back with a score out of 10, your strengths and weaknesses, concrete improvements and the answer a strong candidate would have given.",
+    accent: "text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-950",
+  },
+];
+
+const FEATURES = [
+  {
+    icon: Video,
+    title: "Realistic simulation",
+    body: "Webcam, microphone and voice-to-text put you under the same pressure as the real thing, so the practice actually transfers.",
+    accent: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-950",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Optional proctoring",
+    body: "Run it proctored - screen sharing, fullscreen and tab-switch detection - or in practice mode when you just want to rehearse.",
+    accent: "text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950",
+  },
+  {
+    icon: PenTool,
+    title: "Prep tools and history",
+    body: "Polish your grammar, rewrite an email to a recruiter, and track every attempt with its score in one place.",
+    accent: "text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-950",
+  },
+];
 
 export default function Home() {
   const { userId } = auth();
 
-  if (userId) {
-    redirect("/dashboard");
-  }
+  if (userId) redirect("/dashboard");
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-50 via-white to-cyan-50 dark:from-background dark:via-background dark:to-background">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-50 via-background to-cyan-50 dark:from-background dark:via-background dark:to-background">
       <LandingHeader />
-      
-      {/* Hero Section */}
-      <section className="relative z-10 pt-20 pb-16 px-4 mx-auto max-w-screen-xl text-center lg:pt-32 lg:px-12">
-        
-        {/* Modern Badge */}
-        <div className="inline-flex items-center justify-center py-1 px-3 mb-7 text-sm font-medium text-indigo-800 bg-indigo-100 rounded-full border border-indigo-200 hover:bg-indigo-200 transition-colors shadow-sm cursor-pointer">
-          <Sparkles className="w-4 h-4 mr-2 text-indigo-600" />
-          <span className="tracking-wide">AI-Powered Interview Preparation</span>
-        </div>
 
-        <h1 className="mb-6 text-5xl font-extrabold tracking-tight leading-tight md:text-6xl lg:text-7xl">
-          <span className="text-gray-900 dark:text-white">Master your interviews with </span>
-          <br className="hidden md:block" />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-500">
-            CareerPilot AI
-          </span>
-        </h1>
-        
-        <p className="mb-10 text-lg font-medium text-gray-500 lg:text-xl sm:px-16 xl:px-48">
-          Land your dream job by practicing with our intelligent AI interviewer. Get real-time feedback, personalized questions, and boost your confidence in minutes.
-        </p>
-        
-        <div className="flex flex-col mb-8 lg:mb-16 space-y-4 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-6">
-          <Link href="/dashboard">
-            <Button className="w-full sm:w-auto text-lg px-8 py-6 rounded-full shadow-lg hover:shadow-indigo-500/30 transition-all hover:-translate-y-1">
-              Get Started for Free
-              <svg className="ml-2 -mr-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd"></path>
-              </svg>
-            </Button>
-          </Link>
-          <a href="#how-it-works" className="w-full sm:w-auto">
-            <Button variant="outline" className="w-full text-lg px-8 py-6 rounded-full border-gray-300 hover:bg-gray-50 transition-all">
-              Watch Demo
-            </Button>
-          </a>
-        </div>
-      </section>
+      <main>
+        <section className="relative z-10 mx-auto max-w-screen-xl px-4 pb-16 pt-20 text-center lg:px-12 lg:pt-28">
+          <p className="mb-7 inline-flex items-center justify-center rounded-full border border-indigo-200 bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-800 shadow-sm dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-300">
+            <Sparkles className="mr-2 h-4 w-4" aria-hidden />
+            <span className="tracking-wide">AI-powered interview preparation</span>
+          </p>
 
-      {/* How it Works Section */}
-      <section id="how-it-works" className="relative z-10 py-16 px-4 mx-auto max-w-screen-xl text-center lg:py-24 lg:px-12">
-        <div className="mb-12">
-          <h2 className="font-extrabold text-3xl md:text-4xl text-gray-900 dark:text-white mb-4">How it Works?</h2>
-          <p className="text-lg text-gray-500 dark:text-gray-400 font-medium max-w-2xl mx-auto">Prepare for your next big opportunity in just three simple steps.</p>
-        </div>
+          <h1 className="mb-6 text-balance text-5xl font-extrabold leading-tight tracking-tight md:text-6xl lg:text-7xl">
+            <span>Master your interviews with </span>
+            <br className="hidden md:block" />
+            <span className="bg-gradient-to-r from-indigo-600 to-cyan-500 bg-clip-text text-transparent">
+              CareerPilot AI
+            </span>
+          </h1>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          
-          {/* Card 1 */}
-          <div className="relative group rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-8 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-indigo-200 text-left cursor-default">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 dark:bg-indigo-900/30 rounded-full blur-3xl opacity-0 group-hover:opacity-50 transition-opacity duration-500 -z-10"></div>
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 mb-6 group-hover:scale-110 transition-transform duration-300">
-              <ReceiptText className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">1. Add Job Details</h3>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              Paste the Job Title, Company Name, and Job Description. Our AI analyzes the role to tailor the experience perfectly for you.
+          <p className="mx-auto mb-10 max-w-2xl text-lg font-medium text-muted-foreground lg:text-xl">
+            Practice against questions written for the exact role you are applying to, then get a
+            score and specific feedback on every single answer.
+          </p>
+
+          <div className="mb-8 flex flex-col justify-center gap-4 sm:flex-row lg:mb-16">
+            <Link href="/dashboard">
+              <Button
+                size="lg"
+                className="w-full rounded-full px-8 py-6 text-lg shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-indigo-500/30 sm:w-auto"
+              >
+                Get started for free
+                <ArrowRight className="ml-2 h-5 w-5" aria-hidden />
+              </Button>
+            </Link>
+            <Link href="#how-it-works">
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full rounded-full px-8 py-6 text-lg sm:w-auto"
+              >
+                See how it works
+              </Button>
+            </Link>
+          </div>
+        </section>
+
+        <section
+          id="how-it-works"
+          aria-labelledby="how-it-works-heading"
+          className="relative z-10 mx-auto max-w-screen-xl px-4 py-16 text-center lg:px-12 lg:py-24"
+        >
+          <div className="mb-12">
+            <h2 id="how-it-works-heading" className="mb-4 text-3xl font-extrabold md:text-4xl">
+              How it works
+            </h2>
+            <p className="mx-auto max-w-2xl text-lg font-medium text-muted-foreground">
+              Three steps between you and a sharper interview.
             </p>
           </div>
 
-          {/* Card 2 */}
-          <div className="relative group rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-8 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-cyan-200 text-left cursor-default">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-100 dark:bg-cyan-900/30 rounded-full blur-3xl opacity-0 group-hover:opacity-50 transition-opacity duration-500 -z-10"></div>
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-cyan-100 dark:bg-cyan-900/50 text-cyan-600 dark:text-cyan-400 mb-6 group-hover:scale-110 transition-transform duration-300">
-              <Focus className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">2. Face the AI Interviewer</h3>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              Enable your webcam and microphone. Answer 5 highly-relevant behavioral and technical questions in a simulated environment.
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {STEPS.map(({ icon: Icon, title, body, accent }, index) => (
+              <div
+                key={title}
+                className="group relative rounded-2xl border border-border bg-card/60 p-8 text-left shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div
+                  className={`mb-6 inline-flex h-14 w-14 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${accent}`}
+                >
+                  <Icon className="h-7 w-7" aria-hidden />
+                </div>
+                <h3 className="mb-3 text-xl font-bold">
+                  {index + 1}. {title}
+                </h3>
+                <p className="leading-relaxed text-muted-foreground">{body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          id="features"
+          aria-labelledby="features-heading"
+          className="relative z-10 mx-auto max-w-screen-xl px-4 py-16 text-center lg:px-12 lg:py-24"
+        >
+          <div className="mb-12">
+            <h2 id="features-heading" className="mb-4 text-3xl font-extrabold md:text-4xl">
+              Built for real preparation
+            </h2>
+            <p className="mx-auto max-w-2xl text-lg font-medium text-muted-foreground">
+              Everything you need to walk in confident.
             </p>
           </div>
 
-          {/* Card 3 */}
-          <div className="relative group rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-8 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-purple-200 text-left cursor-default">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100 dark:bg-purple-900/30 rounded-full blur-3xl opacity-0 group-hover:opacity-50 transition-opacity duration-500 -z-10"></div>
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 mb-6 group-hover:scale-110 transition-transform duration-300">
-              <AtomIcon className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">3. Get Instant Feedback</h3>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              Receive a detailed performance rating and constructive feedback on each answer, helping you improve immediately.
-            </p>
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map(({ icon: Icon, title, body, accent }) => (
+              <div
+                key={title}
+                className="rounded-2xl border border-border bg-card p-8 text-left shadow-sm"
+              >
+                <div className={`mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl ${accent}`}>
+                  <Icon className="h-6 w-6" aria-hidden />
+                </div>
+                <h3 className="mb-3 text-xl font-bold">{title}</h3>
+                <p className="leading-relaxed text-muted-foreground">{body}</p>
+              </div>
+            ))}
           </div>
+        </section>
 
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="relative z-10 py-16 px-4 mx-auto max-w-screen-xl text-center lg:py-24 lg:px-12">
-        <div className="mb-12">
-          <h2 className="font-extrabold text-3xl md:text-4xl text-gray-900 dark:text-white mb-4">Powerful Features</h2>
-          <p className="text-lg text-gray-500 dark:text-gray-400 font-medium max-w-2xl mx-auto">Everything you need to crack your next interview with confidence.</p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          
-          {/* Feature 1 */}
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-8 shadow-sm text-left">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 mb-6">
-              <Video className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Real-time Simulation</h3>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              Experience actual interview pressure with webcam, microphone, and mandatory screen-sharing support.
+        <section className="relative z-10 mx-auto max-w-screen-xl px-4 pb-24 lg:px-12">
+          <div className="rounded-3xl border border-border bg-card p-10 text-center shadow-sm md:p-16">
+            <h2 className="text-3xl font-extrabold md:text-4xl">Ready for your next interview?</h2>
+            <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+              Create your first mock interview in under a minute. No card required.
             </p>
+            <Link href="/dashboard" className="mt-8 inline-block">
+              <Button size="lg" className="rounded-full px-8 py-6 text-lg">
+                Start practicing
+                <ArrowRight className="ml-2 h-5 w-5" aria-hidden />
+              </Button>
+            </Link>
           </div>
+        </section>
+      </main>
 
-          {/* Feature 2 */}
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-8 shadow-sm text-left">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 mb-6">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Strict Anti-Cheat Proctoring</h3>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              Built-in tab switch detection and screen recording ensures a fair and realistic interview environment.
-            </p>
-          </div>
+      <footer className="relative z-10 border-t border-border py-8 text-center text-sm text-muted-foreground">
+        <p>&copy; {new Date().getFullYear()} CareerPilot AI. Built to help you ace your next interview.</p>
+      </footer>
 
-          {/* Feature 3 */}
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-8 shadow-sm text-left">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 mb-6">
-              <PenTool className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Prep Tools & History</h3>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              Enhance your grammar, draft professional emails, and manage your complete mock interview history in one place.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Decorative background shapes */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-20 pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute top-40 -left-40 w-96 h-96 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-40 left-1/2 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+      {/* Decorative only - hidden from assistive tech and non-interactive. */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-20 overflow-hidden">
+        <div className="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-indigo-200 opacity-30 mix-blend-multiply blur-3xl animate-blob dark:bg-indigo-900 dark:opacity-20 dark:mix-blend-normal" />
+        <div className="absolute -left-40 top-40 h-96 w-96 rounded-full bg-cyan-200 opacity-30 mix-blend-multiply blur-3xl animate-blob animation-delay-2000 dark:bg-cyan-900 dark:opacity-20 dark:mix-blend-normal" />
+        <div className="absolute -bottom-40 left-1/2 h-96 w-96 rounded-full bg-purple-200 opacity-30 mix-blend-multiply blur-3xl animate-blob animation-delay-4000 dark:bg-purple-900 dark:opacity-20 dark:mix-blend-normal" />
       </div>
     </div>
   );

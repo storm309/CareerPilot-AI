@@ -1,209 +1,297 @@
 "use client";
-import React from 'react';
+
+import { FileText, LoaderCircle, Plus, Sparkles, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import React, { useRef, useState } from "react";
+import { toast } from "sonner";
+
+import { createMockInterview } from "@/actions/aiActions";
+import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { createChatSession } from '@/utils/Geminimodel';
-import { LoaderCircle, Sparkles, Plus } from 'lucide-react';
-import { insertMockInterview } from '@/actions/dbActions';
-import { v4 as uuidv4 } from 'uuid';
-import { useUser } from '@clerk/nextjs';
-import moment from 'moment';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 
-function AddNewInterview() {
-    const [openDialog, setOpenDialog] = React.useState(false);
-    const [Jobpost, setJobpost] = React.useState("");
-    const [JobDescription, setJobDescription] = React.useState("");
-    const [Experience, setExperience] = React.useState("");
-    const [interviewType, setInterviewType] = React.useState("Technical");
-    const [resumeFile, setResumeFile] = React.useState(null);
-    const [loading, setLoading] = React.useState(false);
-    const { user } = useUser();
-    const Router = useRouter();
+const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 
-    const onSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        let resumeText = "";
+const EMPTY_FORM = {
+  jobPosition: "",
+  jobDescription: "",
+  experience: "",
+  interviewType: "Technical",
+  difficulty: "Medium",
+  questionCount: 5,
+};
 
-        if (resumeFile) {
-            try {
-                const formData = new FormData();
-                formData.append('file', resumeFile);
-                const response = await fetch('/api/parse-pdf', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-                if (data.text) {
-                    resumeText = data.text;
-                }
-            } catch (err) {
-                console.error("PDF parse error:", err);
-                toast.error("Failed to parse resume. Proceeding without it.");
-            }
-        }
+function AddNewInterview({ onCreated }) {
+  const [openDialog, setOpenDialog] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [status, setStatus] = useState("idle"); // idle | parsing | generating
+  const fileInputRef = useRef(null);
+  const router = useRouter();
 
-        const Inputprompt = `Job position: ${Jobpost}, Job Description: ${JobDescription}, Years of Experience: ${Experience}, Interview Type: ${interviewType}. ${resumeText ? `Here is the candidate's resume: ${resumeText}` : ''} Based on these details, give me exactly 5 interview questions specifically tailored for a ${interviewType} interview. Return ONLY a JSON array like: [{"question":"...","answer":"..."}]`;
+  const loading = status !== "idle";
 
-        try {
-            // ✅ Fresh chat session for every submit - prevents reuse bugs
-            const session = createChatSession();
-            const result = await session.sendMessage(Inputprompt);
-            let responseText = await result.response.text();
+  const setField = (field) => (event) =>
+    setForm((current) => ({ ...current, [field]: event.target.value }));
 
-            // Parse JSON directly since Gemini is configured to output strict JSON
-            let jsonResponse;
-            try {
-                jsonResponse = JSON.parse(responseText);
-            } catch (parseError) {
-                console.error("JSON Parse Error:", parseError, "\nRaw:", responseText);
-                toast.error("AI response was not valid JSON. Please try again.");
-                setLoading(false);
-                return;
-            }
+  const resetForm = () => {
+    setForm(EMPTY_FORM);
+    setResumeFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
-            if (jsonResponse) {
-                // ✅ Use 'createdat' to match the database schema column name
-                const output = await insertMockInterview({
-                    mockid: uuidv4(),
-                    jsonmockresp: JSON.stringify(jsonResponse),
-                    jobposition: Jobpost,
-                    jobdescription: JobDescription,
-                    jobexp: Experience,
-                    interviewType: interviewType,
-                    resumeText: resumeText.substring(0, 5000), // store up to 5k chars
-                    createdby: user?.primaryEmailAddress?.emailAddress,
-                    createdat: moment().format('YYYY-MM-DD HH:mm:ss')
-                });
+  const handleResumeChange = (event) => {
+    const file = event.target.files?.[0] ?? null;
 
-                if (output && output.error) {
-                    toast.error("Database Error: " + output.error);
-                    setLoading(false);
-                    return;
-                }
+    if (file && file.size > MAX_RESUME_BYTES) {
+      toast.error("That resume is over 5MB. Please upload a smaller PDF.");
+      event.target.value = "";
+      setResumeFile(null);
+      return;
+    }
 
-                if (output && output[0]?.mockId) {
-                    toast.success("Interview created successfully!");
-                    setOpenDialog(false);
-                    Router.push(`/dashboard/interview/${output[0].mockId}`);
-                } else {
-                    toast.error("Something went wrong saving to database. Please try again.");
-                }
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            toast.error("An error occurred: " + (error?.message || "Please try again."));
-        } finally {
-            setLoading(false);
-        }
-    };
+    setResumeFile(file);
+  };
 
-    return (
-        <div>
-            <div
-                className='p-8 border-2 border-dashed border-indigo-200 rounded-2xl bg-indigo-50/50 hover:bg-indigo-50 hover:border-indigo-400 hover:scale-[1.02] hover:shadow-lg cursor-pointer transition-all duration-300 flex items-center justify-center gap-2 group'
-                onClick={() => setOpenDialog(true)}
-            >
-                <div className="bg-indigo-100 p-2 rounded-full group-hover:bg-indigo-600 transition-colors duration-300">
-                    <Plus className="text-indigo-600 group-hover:text-white transition-colors" size={24} />
-                </div>
-                <h2 className='text-lg font-semibold text-indigo-700 group-hover:text-indigo-900 transition-colors'>Add New</h2>
+  const clearResume = () => {
+    setResumeFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const parseResume = async () => {
+    if (!resumeFile) return "";
+
+    setStatus("parsing");
+    const body = new FormData();
+    body.append("file", resumeFile);
+
+    try {
+      const response = await fetch("/api/parse-pdf", { method: "POST", body });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        // A bad resume should not sink the whole interview - warn and carry on.
+        toast.warning(data.error || "Could not read that resume. Continuing without it.");
+        return "";
+      }
+
+      return data.text || "";
+    } catch (error) {
+      console.error("Resume parsing failed:", error);
+      toast.warning("Could not read that resume. Continuing without it.");
+      return "";
+    }
+  };
+
+  const onSubmit = async (event) => {
+    event.preventDefault();
+    if (loading) return;
+
+    const resumeText = await parseResume();
+
+    setStatus("generating");
+
+    try {
+      const result = await createMockInterview({ ...form, resumeText });
+
+      if (!result?.success) {
+        toast.error(result?.error || "Something went wrong. Please try again.");
+        return;
+      }
+
+      toast.success(`${result.questionCount} questions ready. Good luck!`);
+      setOpenDialog(false);
+      resetForm();
+      onCreated?.();
+      router.push(`/dashboard/interview/${result.mockid}`);
+    } catch (error) {
+      console.error("Interview creation failed:", error);
+      toast.error("Could not reach the server. Please check your connection and try again.");
+    } finally {
+      setStatus("idle");
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpenDialog(true)}
+        className="group flex w-full items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-8 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary/10 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        <span className="rounded-full bg-primary/10 p-2 transition-colors duration-300 group-hover:bg-primary">
+          <Plus className="h-6 w-6 text-primary transition-colors group-hover:text-primary-foreground" />
+        </span>
+        <span className="text-lg font-semibold text-primary">Start a new interview</span>
+      </button>
+
+      <Dialog
+        open={openDialog}
+        onOpenChange={(open) => {
+          if (loading) return; // don't drop an in-flight generation
+          setOpenDialog(open);
+          if (!open) resetForm();
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl font-bold">
+              <Sparkles className="text-primary" />
+              Tell us about the role
+            </DialogTitle>
+            <DialogDescription>
+              The more detail you give, the sharper the questions. Adding a resume lets the
+              AI ask about your actual projects.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={onSubmit} className="mt-4 space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="jobPosition">Job role / position</Label>
+                <Input
+                  id="jobPosition"
+                  placeholder="Ex. Full Stack Developer"
+                  required
+                  maxLength={200}
+                  value={form.jobPosition}
+                  onChange={setField("jobPosition")}
+                />
+              </div>
+              <div>
+                <Label htmlFor="interviewType">Interview type</Label>
+                <Select
+                  id="interviewType"
+                  value={form.interviewType}
+                  onChange={setField("interviewType")}
+                >
+                  <option value="Technical">Technical</option>
+                  <option value="HR">HR / Behavioral</option>
+                  <option value="Mixed">Mixed (Tech + HR)</option>
+                  <option value="System Design">System Design</option>
+                </Select>
+              </div>
             </div>
 
-            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                <DialogContent className="bg-white max-w-2xl rounded-2xl border-none shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                            <Sparkles className="text-indigo-600" />
-                            Tell us about your Job Interview
-                        </DialogTitle>
-                        <DialogDescription className="text-slate-500">
-                            Add the details below and our AI will generate 5 tailored interview questions for you.
-                        </DialogDescription>
-                    </DialogHeader>
+            <div>
+              <Label htmlFor="jobDescription">Job description / tech stack</Label>
+              <Textarea
+                id="jobDescription"
+                placeholder="Paste the job description, or list the stack: React, Node.js, PostgreSQL, REST APIs..."
+                required
+                minLength={10}
+                maxLength={5000}
+                value={form.jobDescription}
+                onChange={setField("jobDescription")}
+                className="min-h-[110px]"
+              />
+              <p className="mt-1 text-right text-xs text-muted-foreground">
+                {form.jobDescription.length}/5000
+              </p>
+            </div>
 
-                    <form onSubmit={onSubmit} className="mt-4 space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1">Job Role / Position</label>
-                                <Input
-                                    placeholder="Ex. Full Stack Developer"
-                                    required
-                                    onChange={(e) => setJobpost(e.target.value)}
-                                    className="focus-visible:ring-indigo-600 border-slate-200"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1">Interview Type</label>
-                                <select 
-                                    className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
-                                    value={interviewType}
-                                    onChange={(e) => setInterviewType(e.target.value)}
-                                >
-                                    <option value="Technical">Technical</option>
-                                    <option value="HR">HR / Behavioral</option>
-                                    <option value="Mixed">Mixed (Tech + HR)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">Job Description / Tech Stack</label>
-                            <Textarea
-                                placeholder="Ex. React, Node.js, PostgreSQL, REST APIs..."
-                                required
-                                onChange={(e) => setJobDescription(e.target.value)}
-                                className="focus-visible:ring-indigo-600 border-slate-200 min-h-[100px]"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1">Years of Experience</label>
-                                <Input
-                                    placeholder="Ex. 3"
-                                    min="0"
-                                    max="50"
-                                    type="number"
-                                    required
-                                    onChange={(e) => setExperience(e.target.value)}
-                                    className="focus-visible:ring-indigo-600 border-slate-200"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1">Upload Resume (Optional PDF)</label>
-                                <Input
-                                    type="file"
-                                    accept="application/pdf"
-                                    onChange={(e) => setResumeFile(e.target.files[0])}
-                                    className="focus-visible:ring-indigo-600 border-slate-200 file:text-indigo-600 file:font-semibold file:border-0 file:bg-indigo-50 hover:file:bg-indigo-100"
-                                />
-                            </div>
-                        </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <Label htmlFor="experience">Years of experience</Label>
+                <Input
+                  id="experience"
+                  placeholder="Ex. 3"
+                  min="0"
+                  max="50"
+                  type="number"
+                  required
+                  value={form.experience}
+                  onChange={setField("experience")}
+                />
+              </div>
+              <div>
+                <Label htmlFor="difficulty">Difficulty</Label>
+                <Select id="difficulty" value={form.difficulty} onChange={setField("difficulty")}>
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="questionCount">Questions</Label>
+                <Select
+                  id="questionCount"
+                  value={form.questionCount}
+                  onChange={setField("questionCount")}
+                >
+                  <option value={3}>3 questions</option>
+                  <option value={5}>5 questions</option>
+                  <option value={8}>8 questions</option>
+                  <option value={10}>10 questions</option>
+                </Select>
+              </div>
+            </div>
 
-                        <div className='flex gap-4 justify-end pt-4 border-t border-slate-100'>
-                            <Button type="button" variant="ghost" onClick={() => setOpenDialog(false)} className="text-slate-600 hover:text-slate-900">
-                                Cancel
-                            </Button>
-                            <Button type="submit" disabled={loading} className="bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all">
-                                {loading
-                                    ? <><LoaderCircle className='animate-spin mr-2 h-4 w-4' /> Generating Questions...</>
-                                    : 'Start Interview 🚀'}
-                            </Button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
-        </div>
-    )
+            <div>
+              <Label htmlFor="resume">Resume (optional PDF, max 5MB)</Label>
+              {resumeFile ? (
+                <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2">
+                  <span className="flex min-w-0 items-center gap-2 text-sm">
+                    <FileText className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="truncate">{resumeFile.name}</span>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0"
+                    aria-label="Remove resume"
+                    onClick={clearResume}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Input
+                  id="resume"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleResumeChange}
+                  className="file:mr-3 file:rounded file:border-0 file:bg-primary/10 file:px-2 file:py-1 file:font-semibold file:text-primary"
+                />
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-border pt-4">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={loading}
+                onClick={() => setOpenDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading} className="min-w-[200px]">
+                {loading ? (
+                  <>
+                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    {status === "parsing" ? "Reading resume..." : "Generating questions..."}
+                  </>
+                ) : (
+                  "Start interview"
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
 
 export default AddNewInterview;

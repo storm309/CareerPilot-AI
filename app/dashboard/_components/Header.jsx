@@ -1,69 +1,110 @@
-"use client"
-import { UserButton, SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
-import { Button } from '@/components/ui/button'
-import Image from 'next/image'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import React, { useEffect } from 'react'
-import { ThemeToggle } from '@/components/ThemeToggle'
+"use client";
+
+import { UserButton } from "@clerk/nextjs";
+import { Menu, X } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import React, { useEffect, useState } from "react";
+
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const NAV_ITEMS = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/dashboard/preparation", label: "Prep Tools" },
+  { href: "/dashboard/questions", label: "FAQ" },
+  { href: "/dashboard/upgrade", label: "Upgrade" },
+];
 
 function Header() {
-
   const path = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Navigating from the mobile sheet should close it.
   useEffect(() => {
-    console.log(path)
-  }, [])
+    setMenuOpen(false);
+  }, [path]);
+
+  const isActive = (href) =>
+    href === "/dashboard" ? path === href : path?.startsWith(href);
 
   return (
-    <div className='flex p-4 items-center justify-between bg-background/80 backdrop-blur-md shadow-sm sticky top-0 z-50'>
-      <Image src={'/logo.png'} width={160} height={100} alt='logo' className='h-12 w-auto object-contain dark:invert' />
-      <ul className='hidden md:flex gap-6'>
-        <Link href={"/dashboard"}>
-          <li className={`hover:text-primary hover:font-bold transition-all
-            cursor-pointer
-            ${path == '/dashboard' && 'text-primary font-bold'}
-            `}
+    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+      <div className="flex items-center justify-between gap-4 p-4">
+        <Link href="/dashboard" className="shrink-0" aria-label="CareerPilot AI home">
+          <Image
+            src="/logo.png"
+            width={160}
+            height={100}
+            alt="CareerPilot AI"
+            priority
+            className="h-10 w-auto object-contain dark:invert"
+          />
+        </Link>
 
-          >Dashboard</li>
-        </Link>
-        <Link href={"/dashboard/questions"}>
-          <li className={`hover:text-primary hover:font-bold transition-all
-            cursor-pointer
-            ${path == '/dashboard/questions' && 'text-primary font-bold'}
-            `}>Questions</li>
-        </Link>
-        <Link href={"/dashboard/upgrade"}>
-          <li className={`hover:text-primary hover:font-bold transition-all
-            cursor-pointer
-            ${path == '/dashboard/upgrade' && 'text-primary font-bold'}
-            `}>Upgrade</li>
-        </Link>
-        <Link href={"/dashboard/preparation"}>
-          <li className={`hover:text-primary hover:font-bold transition-all
-            cursor-pointer
-            ${path == '/dashboard/preparation' && 'text-primary font-bold'}
-            `}>Prep Tools</li>
-        </Link>
-        <Link href="/#how-it-works">
-          <li className={`hover:text-primary hover:font-bold transition-all
-              cursor-pointer
-              ${path == '/dashboard/how' && 'text-primary font-bold'}
-              `}>How it Works?</li>
-        </Link>
-      </ul>
-      <div className='flex items-center gap-4'>
-        <ThemeToggle />
-        <SignedIn>
-          <UserButton />
-        </SignedIn>
-        <SignedOut>
-          <SignInButton mode="modal">
-            <Button>Sign In</Button>
-          </SignInButton>
-        </SignedOut>
+        <nav aria-label="Main" className="hidden md:block">
+          <ul className="flex gap-6">
+            {NAV_ITEMS.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={isActive(item.href) ? "page" : undefined}
+                  className={cn(
+                    "text-sm transition-colors hover:text-primary",
+                    isActive(item.href)
+                      ? "font-bold text-primary"
+                      : "font-medium text-muted-foreground"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <UserButton afterSignOutUrl="/" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
       </div>
-    </div>
-  )
+
+      {/* The old header hid the nav entirely below md with no replacement, so
+          every page except the dashboard was unreachable on a phone. */}
+      {menuOpen ? (
+        <nav aria-label="Mobile" className="border-t border-border md:hidden">
+          <ul className="flex flex-col p-2">
+            {NAV_ITEMS.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={isActive(item.href) ? "page" : undefined}
+                  className={cn(
+                    "block rounded-lg px-4 py-3 text-sm transition-colors hover:bg-accent",
+                    isActive(item.href) ? "font-bold text-primary" : "font-medium"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ) : null}
+    </header>
+  );
 }
 
-export default Header
+export default Header;
