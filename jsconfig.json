@@ -3,6 +3,14 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    }
-  }
+    },
+    "jsx": "preserve",
+    "target": "es2020",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "checkJs": false,
+    "lib": ["dom", "dom.iterable", "esnext"]
+  },
+  "include": ["**/*.js", "**/*.jsx", "**/*.mjs", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", ".next"]
 }
