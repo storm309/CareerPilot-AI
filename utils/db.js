@@ -37,15 +37,25 @@ function createDb() {
     console.error("Unexpected Postgres pool error:", error);
   });
 
-  return drizzle(pool, { schema });
+  return { pool, db: drizzle(pool, { schema }) };
 }
 
 function getDb() {
-  if (!globalForDb.__careerpilotDb) {
-    globalForDb.__careerpilotDb = createDb();
+  // Key the cache on the connection string, not just on existence. Next keeps
+  // server modules alive across hot reloads, so editing DATABASE_URL in
+  // .env.local would otherwise keep talking to the previous database until the
+  // whole server was restarted.
+  const connectionString = process.env.DATABASE_URL;
+
+  const cached = globalForDb.__careerpilotDb;
+
+  if (cached?.key !== connectionString) {
+    // Release the previous pool's sockets instead of leaving them open.
+    cached?.pool?.end().catch(() => {});
+    globalForDb.__careerpilotDb = { key: connectionString, ...createDb() };
   }
 
-  return globalForDb.__careerpilotDb;
+  return globalForDb.__careerpilotDb.db;
 }
 
 /**

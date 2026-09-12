@@ -5,29 +5,39 @@ import {
   HarmCategory,
 } from "@google/generative-ai";
 
-// The key must stay server-side. A NEXT_PUBLIC_ prefix inlines it into the
-// browser bundle, where anyone can read it out of the page source and spend
-// the project's quota.
-const apiKey = process.env.GEMINI_API_KEY;
+let cached = null;
 
-const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-
-let cachedModel = null;
-
+/**
+ * Builds the Gemini client, reading configuration at call time.
+ *
+ * The key and model name are deliberately NOT captured at module scope. Next.js
+ * evaluates server modules once and keeps them alive across hot reloads, so a
+ * module-level `const apiKey = process.env.GEMINI_API_KEY` freezes whatever was
+ * set when the module first loaded - editing .env.local then leaves the process
+ * insisting the key is missing until the whole server is restarted.
+ *
+ * The key must also stay server-side. A NEXT_PUBLIC_ prefix would inline it
+ * into the browser bundle, where anyone can read it out of the page source and
+ * spend the project's quota.
+ */
 function getModel() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+
   if (!apiKey) {
-    throw new Error(
-      "GEMINI_API_KEY is not set. Add it to .env.local (server-side only)."
-    );
+    throw new Error("GEMINI_API_KEY is not set. Add it to .env.local (server-side only).");
   }
 
-  if (!cachedModel) {
-    cachedModel = new GoogleGenerativeAI(apiKey).getGenerativeModel({
-      model: MODEL_NAME,
-    });
+  // Rebuild whenever the configuration actually changed.
+  if (!cached || cached.apiKey !== apiKey || cached.modelName !== modelName) {
+    cached = {
+      apiKey,
+      modelName,
+      model: new GoogleGenerativeAI(apiKey).getGenerativeModel({ model: modelName }),
+    };
   }
 
-  return cachedModel;
+  return cached.model;
 }
 
 const generationConfig = {
