@@ -51,11 +51,11 @@ function PlanItemCard({ plan }) {
           rel="noreferrer noopener"
           className="mt-8 block rounded-full bg-primary px-8 py-3 text-center text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          Upgrade via WhatsApp
+          {plan.cta || "Upgrade"}
         </a>
       ) : (
         <span className="mt-8 block rounded-full border border-border px-8 py-3 text-center text-sm font-medium text-muted-foreground">
-          Your current plan
+          {plan.cta || "Current plan"}
         </span>
       )}
     </div>

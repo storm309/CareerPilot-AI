@@ -1,136 +1,227 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { Briefcase, Mail, MessageSquareText, PenTool, TrendingUp } from "lucide-react";
+import {
+  ArrowUpRight,
+  Braces,
+  Briefcase,
+  FileSearch,
+  Flame,
+  Mail,
+  MessageSquareText,
+  PenTool,
+  Terminal,
+  TrendingUp,
+} from "lucide-react";
+import Link from "next/link";
 import React, { useCallback, useEffect, useState } from "react";
 
 import { getDashboardStats, getProgressTrend } from "@/actions/dbActions";
+import { getProgressOverview, getRecentActivity } from "@/actions/progressActions";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatTile, StatTileGrid } from "@/components/ui/stat-tile";
 import AddNewInterview from "./_components/AddNewInterview";
 import InterviewList from "./_components/InterviewList";
 import ScoreTrend from "./_components/ScoreTrend";
 
-const STAT_CARDS = [
+const QUICK_ACTIONS = [
   {
-    key: "totalInterviews",
-    label: "Interviews created",
-    icon: Briefcase,
-    tone: "text-primary",
+    href: "/dashboard/coding",
+    label: "Coding round",
+    blurb: "Solve a problem, run the tests, get reviewed.",
+    icon: Terminal,
   },
   {
-    key: "averageScore",
-    label: "Average score",
-    icon: TrendingUp,
-    tone: "text-emerald-600 dark:text-emerald-400",
-    suffix: " / 10",
-    empty: "--",
+    href: "/dashboard/resume",
+    label: "Resume ATS check",
+    blurb: "Score your resume against one job description.",
+    icon: FileSearch,
   },
   {
-    key: "totalAnswers",
-    label: "Answers graded",
-    icon: MessageSquareText,
-    tone: "text-sky-600 dark:text-sky-400",
-  },
-  {
-    key: "grammarUsage",
-    label: "Grammar checks",
+    href: "/dashboard/preparation",
+    label: "Writing tools",
+    blurb: "Cover letters, emails and your LinkedIn bio.",
     icon: PenTool,
-    tone: "text-purple-600 dark:text-purple-400",
-  },
-  {
-    key: "emailUsage",
-    label: "Emails polished",
-    icon: Mail,
-    tone: "text-amber-600 dark:text-amber-400",
   },
 ];
+
+const ACTIVITY_ICONS = {
+  interview: MessageSquareText,
+  resume: FileSearch,
+  coding: Braces,
+};
+
+function relativeTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const seconds = Math.round((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+  return date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
 
 function Dashboard() {
   const { user, isLoaded } = useUser();
   const [stats, setStats] = useState(null);
   const [trend, setTrend] = useState([]);
-  const [statsLoading, setStatsLoading] = useState(true);
+  const [streak, setStreak] = useState(null);
+  const [activity, setActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const loadStats = useCallback(async () => {
-    setStatsLoading(true);
+  const loadOverview = useCallback(async () => {
+    setLoading(true);
     try {
-      const [statsResult, trendResult] = await Promise.all([
-        getDashboardStats(),
-        getProgressTrend(10),
-      ]);
-      setStats(statsResult);
-      setTrend(trendResult);
-    } catch (error) {
-      // The stat strip is supplementary; a failure here must not blank the page.
-      console.error("Could not load dashboard stats:", error);
-      setStats(null);
+      // Settled, not all: one slow or failing panel must not blank the others.
+      const [statsResult, trendResult, overviewResult, activityResult] =
+        await Promise.allSettled([
+          getDashboardStats(),
+          getProgressTrend(10),
+          getProgressOverview(),
+          getRecentActivity(6),
+        ]);
+
+      if (statsResult.status === "fulfilled") setStats(statsResult.value);
+      if (trendResult.status === "fulfilled") setTrend(trendResult.value);
+      if (overviewResult.status === "fulfilled") setStreak(overviewResult.value.streak);
+      if (activityResult.status === "fulfilled") setActivity(activityResult.value);
+
+      for (const result of [statsResult, trendResult, overviewResult, activityResult]) {
+        if (result.status === "rejected") {
+          console.error("Dashboard panel failed:", result.reason);
+        }
+      }
     } finally {
-      setStatsLoading(false);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (isLoaded && user) loadStats();
-  }, [isLoaded, user, loadStats, refreshKey]);
-
-  const refreshAll = () => setRefreshKey((key) => key + 1);
+    if (isLoaded && user) loadOverview();
+  }, [isLoaded, user, loadOverview, refreshKey]);
 
   const firstName = user?.firstName;
 
   return (
-    <div className="space-y-10 p-1 md:p-4">
-      <header>
-        <h1 className="bg-gradient-to-r from-blue-700 to-indigo-500 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent dark:from-blue-400 dark:to-indigo-300">
-          {firstName ? `Welcome back, ${firstName}` : "Dashboard"}
-        </h1>
-        <p className="mt-1 font-medium text-muted-foreground">
-          Track your progress and run a new AI mock interview.
-        </p>
+    <div className="space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mono-label text-primary">Practice</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">
+            {firstName ? `Welcome back, ${firstName}` : "Dashboard"}
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            Pick up where you left off, or start something new.
+          </p>
+        </div>
+
+        {streak?.current > 0 ? (
+          <Link href="/dashboard/progress">
+            <Badge variant="default" className="gap-1.5 px-3 py-1.5 text-sm">
+              <Flame className="h-4 w-4" />
+              {streak.current} day streak
+            </Badge>
+          </Link>
+        ) : null}
       </header>
 
       <section aria-label="Your stats">
-        {statsLoading ? (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {STAT_CARDS.map((card) => (
-              <Skeleton key={card.key} className="h-[104px] rounded-2xl" />
+        {loading ? (
+          <StatTileGrid>
+            {[0, 1, 2, 3, 4].map((index) => (
+              <Skeleton key={index} className="h-[92px] rounded-xl" />
             ))}
-          </div>
+          </StatTileGrid>
         ) : stats ? (
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {STAT_CARDS.map(({ key, label, icon: Icon, tone, suffix, empty }) => {
-              const value = stats[key];
-              const isEmpty = value === null || value === undefined;
-
-              return (
-                <div
-                  key={key}
-                  className="flex flex-col justify-center gap-2 rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-sm"
-                >
-                  <span className={`flex items-center gap-2 text-sm font-semibold ${tone}`}>
-                    <Icon className="h-4 w-4" aria-hidden />
-                    {label}
-                  </span>
-                  <span className="text-3xl font-bold tabular-nums">
-                    {isEmpty ? (empty ?? 0) : value}
-                    {!isEmpty && suffix ? (
-                      <span className="text-base font-medium text-muted-foreground">{suffix}</span>
-                    ) : null}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <StatTileGrid>
+            <StatTile
+              label="Interviews"
+              value={stats.totalInterviews}
+              icon={Briefcase}
+              tone="text-primary"
+            />
+            <StatTile
+              label="Avg score"
+              value={stats.averageScore}
+              suffix="/10"
+              icon={TrendingUp}
+              tone="text-emerald-500"
+            />
+            <StatTile label="Answers graded" value={stats.totalAnswers} icon={MessageSquareText} />
+            <StatTile label="Grammar checks" value={stats.grammarUsage} icon={PenTool} />
+            <StatTile label="Emails polished" value={stats.emailUsage} icon={Mail} />
+          </StatTileGrid>
         ) : null}
       </section>
 
-      {!statsLoading ? <ScoreTrend data={trend} /> : null}
+      <AddNewInterview onCreated={() => setRefreshKey((key) => key + 1)} />
 
-      <AddNewInterview onCreated={refreshAll} />
+      <section aria-labelledby="quick-actions-heading">
+        <h2 id="quick-actions-heading" className="sr-only">
+          Other things to practice
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {QUICK_ACTIONS.map(({ href, label, blurb, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="group rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-accent"
+            >
+              <div className="flex items-center justify-between">
+                <Icon className="h-5 w-5 text-primary" aria-hidden />
+                <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              </div>
+              <p className="mt-3 font-semibold">{label}</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{blurb}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {!loading ? <ScoreTrend data={trend} /> : null}
+
+      {activity.length > 0 ? (
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Recent activity</h2>
+          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+            {activity.map((item, index) => {
+              const Icon = ACTIVITY_ICONS[item.kind] ?? MessageSquareText;
+
+              return (
+                <li key={`${item.kind}-${index}`}>
+                  <Link
+                    href={item.href}
+                    className="flex items-center gap-3 p-3 transition-colors hover:bg-accent"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">{item.label}</span>
+                      <span className="mono-label text-muted-foreground">{item.kind}</span>
+                    </span>
+                    {item.score ? (
+                      <span className="font-mono text-sm tabular-nums">{item.score}</span>
+                    ) : null}
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {relativeTime(item.createdat)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       <section>
-        <h2 className="mb-4 text-xl font-bold">Your mock interviews</h2>
-        <InterviewList refreshKey={refreshKey} onChanged={loadStats} />
+        <h2 className="mb-4 text-lg font-semibold">Your mock interviews</h2>
+        <InterviewList refreshKey={refreshKey} onChanged={loadOverview} />
       </section>
     </div>
   );

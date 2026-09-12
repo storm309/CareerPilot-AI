@@ -2,64 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Dark-first. The dark palette is the product's real look; light mode is the
+ * supported alternate, not the source of truth. Both are defined explicitly so
+ * next-themes can switch either way without anything inheriting a stale value.
+ */
 @layer base {
   :root {
+    --background: 222 47% 5%;
+    --foreground: 210 40% 96%;
+    --card: 222 40% 8%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 44% 7%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 187 92% 50%;
+    /* Cyan is bright: dark ink on top of it, never white. */
+    --primary-foreground: 222 47% 6%;
+    --secondary: 217 33% 14%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 13%;
+    --muted-foreground: 215 20% 62%;
+    --accent: 217 33% 16%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 69% 48%;
+    --warning: 38 95% 58%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 187 92% 50%;
+
+    /* Chart ramp: cyan lead, then hues kept far apart around the wheel. */
+    --chart-1: 187 92% 50%;
+    --chart-2: 258 90% 68%;
+    --chart-3: 152 69% 48%;
+    --chart-4: 38 95% 58%;
+    --chart-5: 330 81% 62%;
+
+    --grid-line: 217 33% 13%;
+    --radius: 0.625rem;
+  }
+
+  .light {
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 243 75% 59%;
+    /* Darkened so white text on the button clears 4.5:1 on a light page. */
+    --primary: 192 91% 28%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
+    --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 220 14% 96%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 42%;
+    --accent: 210 40% 94%;
     --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 142 71% 45%;
-    --warning: 38 92% 50%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 243 75% 59%;
-    --chart-1: 243 75% 59%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 44%;
-    --chart-4: 43 74% 56%;
-    --chart-5: 27 87% 60%;
-    --radius: 0.75rem;
-  }
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 69% 32%;
+    --warning: 32 90% 40%;
+    --border: 214 32% 89%;
+    --input: 214 32% 89%;
+    --ring: 192 91% 28%;
 
-  .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 20% 96%;
-    --card: 222 40% 9%;
-    --card-foreground: 210 20% 96%;
-    --popover: 222 40% 9%;
-    --popover-foreground: 210 20% 96%;
-    --primary: 243 75% 66%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 20% 96%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 218 11% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 20% 96%;
-    --destructive: 0 63% 45%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 142 60% 45%;
-    --warning: 38 92% 55%;
-    --border: 217 33% 20%;
-    --input: 217 33% 20%;
-    --ring: 243 75% 66%;
-    --chart-1: 243 75% 66%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 197 45% 60%;
-    --chart-4: 43 74% 62%;
-    --chart-5: 340 75% 62%;
+    --chart-1: 192 91% 34%;
+    --chart-2: 258 70% 52%;
+    --chart-3: 152 69% 32%;
+    --chart-4: 32 90% 42%;
+    --chart-5: 330 71% 48%;
+
+    --grid-line: 214 32% 93%;
   }
 }
 
@@ -70,8 +84,7 @@
 
   body {
     @apply bg-background text-foreground;
-    /* The Geist faces are loaded by next/font in app/layout.js; the previous
-       hardcoded Arial rule overrode them on every page. */
+    /* The Geist faces are loaded by next/font in app/layout.js. */
     font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
@@ -80,6 +93,40 @@
   html {
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
+  }
+
+  /* One visible focus treatment everywhere, keyboard-only. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* The faint blueprint grid behind hero and shell surfaces. */
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, hsl(var(--grid-line)) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--grid-line)) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+
+  /* Fades the grid out toward the edges so it never fights the content. */
+  .grid-fade {
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+
+  /* Small uppercase mono label used for section eyebrows and stat captions. */
+  .mono-label {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .glow-ring {
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 0 24px -6px hsl(var(--primary) / 0.45);
   }
 }
 
@@ -115,6 +162,10 @@
     border-radius: 9999px;
     background-clip: content-box;
   }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -125,5 +176,49 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Print. The feedback report is meant to be saved as a PDF from the browser's
+ * own print dialog, so the app chrome is dropped and colours are flattened to
+ * something that survives on white paper.
+ * ------------------------------------------------------------------------- */
+@media print {
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 30%;
+    --border: 0 0% 80%;
+    --primary: 0 0% 10%;
+    --primary-foreground: 0 0% 100%;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  [data-print-root] {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Keep a question and its feedback on the same sheet where possible. */
+  [data-print-block] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  a[href]::after {
+    content: "";
   }
 }

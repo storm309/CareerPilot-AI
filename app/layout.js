@@ -46,10 +46,8 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0f1c" },
-  ],
+  themeColor: "#080c14",
+  colorScheme: "dark light",
 };
 
 export default function RootLayout({ children }) {
@@ -57,10 +55,12 @@ export default function RootLayout({ children }) {
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+          {/* Dark-first: the product ships dark and stays dark unless the
+              person switches it, rather than following the OS. */}
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="dark"
+            enableSystem={false}
             disableTransitionOnChange
           >
             <Toaster position="top-right" richColors expand />

@@ -4,7 +4,9 @@ import {
   ArrowLeft,
   ChevronDown,
   ClipboardList,
+  Gauge,
   Lightbulb,
+  Printer,
   RotateCcw,
   Sparkles,
   ThumbsUp,
@@ -14,6 +16,7 @@ import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 
 import { getFeedbackByMockId } from "@/actions/dbActions";
+import { getAttemptComparison } from "@/actions/progressActions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +27,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import AttemptComparison from "./_components/AttemptComparison";
 
 function scoreTone(score) {
   const value = Number.parseFloat(score);
@@ -40,6 +44,49 @@ function verdict(average) {
   if (value >= 6) return "Solid, with clear room to sharpen your answers.";
   if (value >= 4) return "A reasonable start. Work through the improvements below.";
   return "Plenty to work on. Rerun this interview after reviewing the ideal answers.";
+}
+
+function parseDelivery(value) {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+/** Compact delivery strip: how it was said, next to how good it was. */
+function DeliveryStrip({ delivery }) {
+  if (!delivery) return null;
+
+  const stats = [
+    { label: "Words", value: delivery.words },
+    { label: "Pace", value: delivery.wordsPerMinute ? `${delivery.wordsPerMinute} wpm` : "typed" },
+    { label: "Fillers", value: delivery.fillerCount },
+    { label: "STAR", value: delivery.star ? `${delivery.star.score}/4` : "--" },
+  ];
+
+  return (
+    <div className="rounded-xl border border-border bg-background p-4">
+      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+        <Gauge className="h-4 w-4 text-primary" />
+        Delivery
+        {delivery.score != null ? (
+          <Badge variant={delivery.score >= 7 ? "success" : delivery.score >= 5 ? "warning" : "danger"}>
+            {delivery.score}/10
+          </Badge>
+        ) : null}
+      </h4>
+      <dl className="grid grid-cols-4 gap-2 text-center">
+        {stats.map((stat) => (
+          <div key={stat.label}>
+            <dt className="mono-label text-muted-foreground">{stat.label}</dt>
+            <dd className="font-mono text-sm font-semibold tabular-nums">{stat.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
 }
 
 function DetailBlock({ icon: Icon, title, tone, children }) {
@@ -63,6 +110,7 @@ function Feedback({ params }) {
   const router = useRouter();
 
   const [data, setData] = useState(null);
+  const [comparison, setComparison] = useState([]);
   const [loadState, setLoadState] = useState("loading");
   const [attempt, setAttempt] = useState(undefined);
 
@@ -74,6 +122,16 @@ function Feedback({ params }) {
         setData(result);
         setAttempt(result.selectedAttempt);
         setLoadState("ready");
+
+        // Secondary: a failure here must not blank the feedback itself.
+        if (result.attempts.length > 1) {
+          try {
+            const trend = await getAttemptComparison(interviewid);
+            setComparison(trend.attempts);
+          } catch (comparisonError) {
+            console.error("Could not load attempt comparison:", comparisonError);
+          }
+        }
       } catch (error) {
         console.error("Could not load feedback:", error);
         setLoadState("error");
@@ -191,6 +249,8 @@ function Feedback({ params }) {
             <p className="mt-3 text-sm text-muted-foreground">{verdict(averageRating)}</p>
           </section>
 
+          <AttemptComparison attempts={comparison} selectedAttempt={attempt} />
+
           <div className="space-y-4">
             {answers.map((answer, index) => (
               <Collapsible
@@ -214,6 +274,8 @@ function Feedback({ params }) {
                   {answer.confidenceLevel ? (
                     <Badge variant="outline">Confidence read: {answer.confidenceLevel}</Badge>
                   ) : null}
+
+                  <DeliveryStrip delivery={parseDelivery(answer.delivery)} />
 
                   <DetailBlock
                     icon={ClipboardList}
@@ -277,9 +339,17 @@ function Feedback({ params }) {
           <ArrowLeft className="mr-1.5 h-4 w-4" /> Back to dashboard
         </Button>
         {answers.length > 0 ? (
-          <Button onClick={() => router.push(`/dashboard/interview/${interviewid}/start`)}>
-            <RotateCcw className="mr-1.5 h-4 w-4" /> Retake this interview
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/dashboard/interview/${interviewid}/feedback/print`)}
+            >
+              <Printer className="mr-1.5 h-4 w-4" /> Export as PDF
+            </Button>
+            <Button onClick={() => router.push(`/dashboard/interview/${interviewid}/start`)}>
+              <RotateCcw className="mr-1.5 h-4 w-4" /> Retake this interview
+            </Button>
+          </div>
         ) : null}
       </div>
     </div>

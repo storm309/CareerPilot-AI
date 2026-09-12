@@ -16,6 +16,7 @@ module.exports = {
         blob: "blob 7s infinite",
         "fade-in": "fade-in 0.3s ease-out",
         "slide-up": "slide-up 0.35s ease-out",
+        "slide-in-left": "slide-in-left 0.2s ease-out",
       },
       keyframes: {
         blob: {
@@ -31,6 +32,10 @@ module.exports = {
         "slide-up": {
           from: { opacity: "0", transform: "translateY(8px)" },
           to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-in-left": {
+          from: { transform: "translateX(-100%)" },
+          to: { transform: "translateX(0)" },
         },
       },
       colors: {

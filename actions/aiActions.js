@@ -8,6 +8,7 @@ import { generateJson } from "@/utils/Geminimodel";
 import { db } from "@/utils/db";
 import { enforceRateLimit } from "@/utils/rateLimit";
 import { requireUser } from "@/utils/serverAuth";
+import { buildDeliveryMetrics, deliveryScore } from "@/utils/speechMetrics";
 import {
   emailHistory,
   grammarHistory,
@@ -19,6 +20,7 @@ import {
   INTERVIEW_TYPES,
   LIMITS,
   QUESTION_COUNTS,
+  WRITING_MODES,
   clampExperience,
   cleanString,
   pickFromList,
@@ -223,7 +225,13 @@ export async function beginAttempt(mockid) {
     : { success: true, attempt: latest, answeredQuestions: answeredInLatest };
 }
 
-export async function submitAnswer({ mockid, questionIndex, userAnswer, attempt }) {
+export async function submitAnswer({
+  mockid,
+  questionIndex,
+  userAnswer,
+  attempt,
+  spokenSeconds,
+}) {
   let email;
 
   try {
@@ -251,6 +259,16 @@ export async function submitAnswer({ mockid, questionIndex, userAnswer, attempt 
   if (!question?.question) {
     return fail("That question does not belong to this interview.");
   }
+
+  // Delivery is measured, not asked of the model: filler density, pace and STAR
+  // coverage are deterministic, so they are recomputed here rather than trusted
+  // from the browser.
+  const seconds = Number(spokenSeconds);
+  const delivery = buildDeliveryMetrics(
+    answer,
+    Number.isFinite(seconds) && seconds > 0 && seconds < 3600 ? seconds : null
+  );
+  delivery.score = deliveryScore(delivery);
 
   const prompt = `Act as a strict but fair senior technical hiring manager reviewing one interview answer.
 
@@ -328,6 +346,7 @@ Respond with ONLY this JSON object:
       weaknesses: cleanString(evaluation?.weaknesses, 2000) || null,
       improvements: cleanString(evaluation?.improvements, 2000) || null,
       confidenceLevel: cleanString(evaluation?.confidenceLevel, 20) || null,
+      delivery: JSON.stringify(delivery),
       attempt: resolvedAttempt,
       userEmail: email,
       createdat: new Date().toISOString().slice(0, 19).replace("T", " "),
@@ -347,10 +366,90 @@ Respond with ONLY this JSON object:
     weaknesses: evaluation?.weaknesses ?? null,
     improvements: evaluation?.improvements ?? null,
     confidenceLevel: evaluation?.confidenceLevel ?? null,
+    delivery,
   };
 }
 
-export async function improveText({ text, mode }) {
+const WRITING_PROMPTS = {
+  grammar: ({ text }) => `Act as an English writing coach. Correct the text below for grammar, punctuation, spelling and style without changing its meaning.
+
+Text:
+"""
+${text}
+"""
+
+Respond with ONLY this JSON object:
+{
+  "correctedText": "<the fully corrected text>",
+  "feedback": "<a short markdown bullet list naming each correction and why it was needed>"
+}`,
+
+  email: ({ text }) => `Act as a corporate communications coach. Rewrite the email draft below so it is professional, clear and appropriately concise, keeping the sender's intent and every concrete detail intact.
+
+Draft:
+"""
+${text}
+"""
+
+Respond with ONLY this JSON object:
+{
+  "correctedText": "<the rewritten email, including a subject line>",
+  "feedback": "<a short markdown bullet list explaining the tone, clarity and structure changes>"
+}`,
+
+  "cover-letter": ({ text, jobTitle, company }) => `Act as a career coach writing a cover letter for a candidate.
+
+Target role: ${jobTitle || "the role described below"}
+Company: ${company || "the company"}
+
+Candidate's background, resume text or rough notes:
+"""
+${text}
+"""
+
+Write a cover letter of 250-350 words in four short paragraphs: why this company, what the candidate has actually done that maps to the role, one concrete result with a number if the notes contain one, and a direct closing ask.
+
+Hard rules:
+- Use only facts present in the notes above. Never invent an employer, a metric or a technology.
+- No "I am writing to apply for". No "passionate", "dynamic", "synergy", "leverage".
+- Plain, specific, confident. Write the way a competent engineer emails a hiring manager.
+
+Respond with ONLY this JSON object:
+{
+  "correctedText": "<the complete cover letter, ready to send>",
+  "feedback": "<a short markdown bullet list: what you emphasized, what you left out, and what the candidate should add themselves>"
+}`,
+
+  linkedin: ({ text, jobTitle }) => `Act as a personal branding expert rewriting a LinkedIn "About" section.
+
+Target role the candidate wants: ${jobTitle || "not specified"}
+
+Candidate's background, resume text or rough notes:
+"""
+${text}
+"""
+
+Write a first-person About section of 120-200 words: a specific opening line, what they build and the stack they build it with, one or two concrete results, and a closing line about what they want next.
+
+Hard rules:
+- Use only facts present in the notes above. Invent nothing.
+- No buzzword soup, no third person, no "results-driven professional".
+- Short paragraphs, no walls of text. At most one emoji, or none.
+
+Respond with ONLY this JSON object:
+{
+  "correctedText": "<the About section>",
+  "feedback": "<a short markdown bullet list: the angle you took, plus 3 keyword suggestions for their headline>"
+}`,
+};
+
+const WRITING_STORAGE = {
+  email: "Draft Review",
+  "cover-letter": "Cover Letter",
+  linkedin: "LinkedIn Summary",
+};
+
+export async function improveText({ text, mode, jobTitle, company }) {
   let email;
 
   try {
@@ -360,50 +459,38 @@ export async function improveText({ text, mode }) {
     return fail(error.message);
   }
 
+  const selectedMode = pickFromList(mode, WRITING_MODES, "grammar");
   const cleaned = cleanString(text, LIMITS.prepText);
-  if (cleaned.length < 10) {
-    return fail("Please enter at least 10 characters to analyze.");
+
+  // Cover letters and LinkedIn summaries are generated from background notes,
+  // so they need more to work with than a one-line grammar fix does.
+  const minimum = selectedMode === "grammar" || selectedMode === "email" ? 10 : 60;
+
+  if (cleaned.length < minimum) {
+    return fail(
+      minimum === 10
+        ? "Please enter at least 10 characters to analyze."
+        : `Paste at least ${minimum} characters about your background so there is something real to work from.`
+    );
   }
 
-  const isEmail = mode === "email";
-
-  const prompt = isEmail
-    ? `Act as a corporate communications coach. Rewrite the email draft below so it is professional, clear and appropriately concise, keeping the sender's intent and every concrete detail intact.
-
-Draft:
-"""
-${cleaned}
-"""
-
-Respond with ONLY this JSON object:
-{
-  "correctedText": "<the rewritten email, including a subject line>",
-  "feedback": "<a short markdown bullet list explaining the tone, clarity and structure changes>"
-}`
-    : `Act as an English writing coach. Correct the text below for grammar, punctuation, spelling and style without changing its meaning.
-
-Text:
-"""
-${cleaned}
-"""
-
-Respond with ONLY this JSON object:
-{
-  "correctedText": "<the fully corrected text>",
-  "feedback": "<a short markdown bullet list naming each correction and why it was needed>"
-}`;
+  const prompt = WRITING_PROMPTS[selectedMode]({
+    text: cleaned,
+    jobTitle: cleanString(jobTitle ?? "", LIMITS.jobPosition),
+    company: cleanString(company ?? "", LIMITS.company),
+  });
 
   let result;
   try {
     result = await generateJson(prompt);
   } catch (error) {
-    console.error("Prep tool failed:", error);
+    console.error("Writing tool failed:", error);
     return fail(error.message || "Analysis failed. Please try again.");
   }
 
   const correctedText = cleanString(result?.correctedText, LIMITS.prepText * 2);
   if (!correctedText) {
-    return fail("The AI did not return a rewritten version. Please try again.");
+    return fail("The AI did not return anything usable. Please try again.");
   }
 
   const feedback =
@@ -414,27 +501,27 @@ Respond with ONLY this JSON object:
         : JSON.stringify(result?.feedback ?? "");
 
   try {
-    if (isEmail) {
-      await db.insert(emailHistory).values({
-        userEmail: email,
-        emailType: "Draft Review",
-        originalText: cleaned,
-        generatedEmail: correctedText,
-        feedback,
-      });
-    } else {
+    if (selectedMode === "grammar") {
       await db.insert(grammarHistory).values({
         userEmail: email,
         originalText: cleaned,
         correctedText,
         feedback,
       });
+    } else {
+      await db.insert(emailHistory).values({
+        userEmail: email,
+        emailType: WRITING_STORAGE[selectedMode],
+        originalText: cleaned,
+        generatedEmail: correctedText,
+        feedback,
+      });
     }
   } catch (error) {
     // The user still gets their result; only the history row is lost.
-    console.error("Could not save prep history:", error);
+    console.error("Could not save writing history:", error);
   }
 
-  revalidatePath("/dashboard");
-  return { success: true, correctedText, feedback };
+  revalidatePath("/dashboard/preparation");
+  return { success: true, mode: selectedMode, correctedText, feedback };
 }
