@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" width="220" height="48" role="img" aria-label="CareerPilot AI">
+  <title>CareerPilot AI</title>
+  <defs>
+    <linearGradient id="cp-badge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f1b2d"/>
+      <stop offset="100%" stop-color="#0a1220"/>
+    </linearGradient>
+    <linearGradient id="cp-needle" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#67e8f9"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(4 8)">
+    <rect width="32" height="32" rx="8" fill="url(#cp-badge)"/>
+    <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="7.25" fill="none" stroke="#22d3ee" stroke-opacity="0.28" stroke-width="1.5"/>
+    <path d="M16 5.5 L23.8 25.5 L16 21 Z" fill="url(#cp-needle)"/>
+    <path d="M16 5.5 L16 21 L8.2 25.5 Z" fill="#22d3ee" fill-opacity="0.42"/>
+  </g>
+
+  <!-- Standalone file (og/social/external use), so the wordmark is drawn with a
+       system font stack rather than the app's bundled face. -->
+  <text x="46" y="30"
+        font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="20" font-weight="700" letter-spacing="-0.5" fill="#e8eef7">CareerPilot<tspan fill="#22d3ee">&#160;AI</tspan></text>
+</svg>

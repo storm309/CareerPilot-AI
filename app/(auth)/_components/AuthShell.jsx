@@ -1,6 +1,7 @@
 import { Lightbulb } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
+
+import { Logo } from "@/components/Logo";
 import React from "react";
 
 /**
@@ -13,13 +14,7 @@ export default function AuthShell({ children, note }) {
       <section className="relative flex h-32 items-end bg-slate-900 lg:col-span-5 lg:h-full xl:col-span-6">
         <div className="hidden lg:block lg:p-12">
           <Link href="/" className="block" aria-label="CareerPilot AI home">
-            <Image
-              src="/logo.png"
-              width={160}
-              height={100}
-              alt="CareerPilot AI"
-              className="h-10 w-auto object-contain invert"
-            />
+            <Logo className="text-white" markClassName="h-9 w-9" />
           </Link>
 
           <h2 className="mt-6 text-2xl font-bold text-white sm:text-3xl md:text-4xl">

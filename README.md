@@ -1,7 +1,7 @@
 # CareerPilot AI
 
 <div align="center">
-  <img src="public/logo.png" alt="CareerPilot AI Logo" width="200"/>
+  <img src="public/logo.svg" alt="CareerPilot AI" width="260"/>
 </div>
 
 **CareerPilot AI** generates a mock interview for the exact role you are applying to, listens to
@@ -84,6 +84,15 @@ utils/
   validation.js      -> input cleaning, length caps, enum allowlists
   speechMetrics.js   -> filler words, pace, STAR - shared by browser and server
 app/dashboard/coding/_components/runTests.js -> the Web Worker code sandbox
+```
+
+**Brand assets are vector-first.** The mark lives as inline SVG in
+`components/Logo.jsx` and `app/icon.svg`; `scripts/render-brand-assets.mjs` renders the PNGs that
+iOS and link scrapers require. The wordmark is real text in the app's font, not baked into an
+image. Regenerate the rasters only when the mark changes:
+
+```bash
+npm install --no-save sharp && node scripts/render-brand-assets.mjs
 ```
 
 **The one external runtime dependency** is the Monaco editor bundle, fetched from jsDelivr at a

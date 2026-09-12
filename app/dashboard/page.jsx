@@ -14,7 +14,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { getDashboardStats, getProgressTrend } from "@/actions/dbActions";
 import { getProgressOverview, getRecentActivity } from "@/actions/progressActions";
@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatTile, StatTileGrid } from "@/components/ui/stat-tile";
 import AddNewInterview from "./_components/AddNewInterview";
+import GettingStarted from "./_components/GettingStarted";
 import InterviewList from "./_components/InterviewList";
 import ScoreTrend from "./_components/ScoreTrend";
 
@@ -70,9 +71,11 @@ function Dashboard() {
   const [stats, setStats] = useState(null);
   const [trend, setTrend] = useState([]);
   const [streak, setStreak] = useState(null);
+  const [totals, setTotals] = useState(null);
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const newInterviewRef = useRef(null);
 
   const loadOverview = useCallback(async () => {
     setLoading(true);
@@ -88,7 +91,10 @@ function Dashboard() {
 
       if (statsResult.status === "fulfilled") setStats(statsResult.value);
       if (trendResult.status === "fulfilled") setTrend(trendResult.value);
-      if (overviewResult.status === "fulfilled") setStreak(overviewResult.value.streak);
+      if (overviewResult.status === "fulfilled") {
+        setStreak(overviewResult.value.streak);
+        setTotals(overviewResult.value.totals);
+      }
       if (activityResult.status === "fulfilled") setActivity(activityResult.value);
 
       for (const result of [statsResult, trendResult, overviewResult, activityResult]) {
@@ -159,7 +165,17 @@ function Dashboard() {
         ) : null}
       </section>
 
-      <AddNewInterview onCreated={() => setRefreshKey((key) => key + 1)} />
+      {!loading ? (
+        <GettingStarted
+          totals={totals}
+          onAction={() => newInterviewRef.current?.open()}
+        />
+      ) : null}
+
+      <AddNewInterview
+        ref={newInterviewRef}
+        onCreated={() => setRefreshKey((key) => key + 1)}
+      />
 
       <section aria-labelledby="quick-actions-heading">
         <h2 id="quick-actions-heading" className="sr-only">

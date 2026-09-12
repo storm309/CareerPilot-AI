@@ -2,10 +2,10 @@
 
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { Menu, X } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
 
+import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 
@@ -21,14 +21,7 @@ function LandingHeader() {
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-md">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between gap-4 p-4">
         <Link href="/" aria-label="CareerPilot AI home">
-          <Image
-            src="/logo.png"
-            width={160}
-            height={100}
-            alt="CareerPilot AI"
-            priority
-            className="h-10 w-auto object-contain dark:invert"
-          />
+          <Logo markClassName="h-9 w-9" />
         </Link>
 
         <nav aria-label="Main" className="hidden md:block">

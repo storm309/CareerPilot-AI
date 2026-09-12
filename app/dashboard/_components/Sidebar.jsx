@@ -13,11 +13,11 @@ import {
   TrendingUp,
   X,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useEffect } from "react";
 
+import { Logo, LogoMark } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -110,14 +110,9 @@ function SidebarBody({ collapsed, onNavigate, onClose, onToggleCollapsed }) {
           className="flex min-w-0 items-center"
           aria-label="CareerPilot AI dashboard"
         >
-          <Image
-            src="/logo.png"
-            width={120}
-            height={80}
-            alt=""
-            priority
-            className="h-8 w-auto shrink-0 object-contain dark:invert"
-          />
+          {/* The wordmark is dropped when the rail collapses; the mark
+              alone still identifies the product. */}
+          {collapsed ? <LogoMark className="h-8 w-8" title="CareerPilot AI" /> : <Logo />}
         </Link>
         {onClose ? (
           <button

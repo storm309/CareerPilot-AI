@@ -2,7 +2,7 @@
 
 import { FileText, LoaderCircle, Plus, Sparkles, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { useRef, useState } from "react";
+import React, { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { createMockInterview } from "@/actions/aiActions";
@@ -30,7 +30,7 @@ const EMPTY_FORM = {
   questionCount: 5,
 };
 
-function AddNewInterview({ onCreated }) {
+const AddNewInterview = forwardRef(function AddNewInterview({ onCreated }, ref) {
   const [openDialog, setOpenDialog] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [resumeFile, setResumeFile] = useState(null);
@@ -39,6 +39,10 @@ function AddNewInterview({ onCreated }) {
   const router = useRouter();
 
   const loading = status !== "idle";
+
+  // The getting-started checklist opens this dialog without rendering a second
+  // copy of the form.
+  useImperativeHandle(ref, () => ({ open: () => setOpenDialog(true) }), []);
 
   const setField = (field) => (event) =>
     setForm((current) => ({ ...current, [field]: event.target.value }));
@@ -292,6 +296,6 @@ function AddNewInterview({ onCreated }) {
       </Dialog>
     </>
   );
-}
+});
 
 export default AddNewInterview;

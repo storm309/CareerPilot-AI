@@ -39,9 +39,7 @@ export const metadata = {
     description:
       "Tailored AI interview questions and instant, structured feedback on every answer.",
     type: "website",
-    images: ["/logo.png"],
   },
-  icons: { icon: "/favicon.ico" },
   robots: { index: true, follow: true },
 };
 
