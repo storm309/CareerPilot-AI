@@ -177,6 +177,11 @@ export function runJavaScriptTests({ code, functionName, testCases }) {
 
       worker.onerror = (event) =>
         finish({ error: event.message || "Your code crashed.", results: [], logs: [] });
+
+      // Hand the work over. The worker body is just an onmessage handler, so
+      // without this it waits forever and every run trips the timeout above
+      // and is reported as an infinite loop.
+      worker.postMessage({ code, functionName, testCases });
     } catch (error) {
       finish({
         error: "This browser could not start the code sandbox.",
