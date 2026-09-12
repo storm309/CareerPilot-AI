@@ -40,11 +40,21 @@ const TOPICS = [
 ];
 
 const LANGUAGES = [
-  { id: "javascript", label: "JavaScript (runs your tests)" },
-  { id: "typescript", label: "TypeScript (review only)" },
-  { id: "python", label: "Python (review only)" },
-  { id: "java", label: "Java (review only)" },
-  { id: "cpp", label: "C++ (review only)" },
+  { id: "javascript", label: "JavaScript", runs: true },
+  { id: "typescript", label: "TypeScript", runs: false },
+  { id: "python", label: "Python", runs: false },
+  { id: "java", label: "Java", runs: false },
+  { id: "cpp", label: "C++", runs: false },
+];
+
+// Generation takes the better part of a minute, so the button says what is
+// happening rather than spinning silently.
+const GENERATION_STEPS = [
+  "Picking a problem...",
+  "Writing the statement...",
+  "Building test cases...",
+  "Checking the expected answers...",
+  "Almost there...",
 ];
 
 function VerdictBadge({ session }) {
@@ -81,6 +91,7 @@ export default function CodingPage() {
   const [language, setLanguage] = useState("javascript");
   const [role, setRole] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [step, setStep] = useState(0);
   const [history, setHistory] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
@@ -96,6 +107,18 @@ export default function CodingPage() {
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
+
+  // Advance the status text on a timer; the request gives us no progress of
+  // its own, and a 40-second silent spinner reads as a hang.
+  useEffect(() => {
+    if (!generating) return undefined;
+    setStep(0);
+    const timer = setInterval(
+      () => setStep((current) => Math.min(current + 1, GENERATION_STEPS.length - 1)),
+      7000
+    );
+    return () => clearInterval(timer);
+  }, [generating]);
 
   const generate = async () => {
     if (generating) return;
@@ -179,6 +202,7 @@ export default function CodingPage() {
               {LANGUAGES.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.label}
+                  {item.runs ? " - runs your tests" : " - AI review only"}
                 </option>
               ))}
             </Select>
@@ -198,15 +222,17 @@ export default function CodingPage() {
 
         {language !== "javascript" ? (
           <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-500">
-            Only JavaScript runs in the browser sandbox. In {LANGUAGES.find((l) => l.id === language)?.label.split(" (")[0]} you
-            will write the solution and get an AI review, but the test cases won&apos;t execute.
+            Heads up: only JavaScript executes. It runs in a sandbox inside your own browser -{" "}
+            {LANGUAGES.find((item) => item.id === language)?.label} would need a server-side
+            runner, which this app doesn&apos;t have. You still get the problem, the editor and a
+            full AI review of your solution; the test cases just won&apos;t run.
           </p>
         ) : null}
 
-        <Button className="mt-5" size="lg" onClick={generate} disabled={generating}>
+        <Button className="mt-5 min-w-[260px]" size="lg" onClick={generate} disabled={generating}>
           {generating ? (
             <>
-              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> Writing your problem...
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> {GENERATION_STEPS[step]}
             </>
           ) : (
             <>

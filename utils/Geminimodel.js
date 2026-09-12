@@ -34,7 +34,11 @@ const generationConfig = {
   temperature: 0.9,
   topP: 0.95,
   topK: 64,
-  maxOutputTokens: 8192,
+  // Gemini 2.5 is a thinking model and its internal reasoning tokens are
+  // charged against this same budget. At 8192 a hard problem spent ~7900 on
+  // reasoning and had ~300 left for the answer, so the JSON came back
+  // truncated mid-string. 2.5 Flash allows up to 65536.
+  maxOutputTokens: 32768,
   responseMimeType: "application/json",
 };
 
@@ -48,6 +52,55 @@ const safetySettings = [
     threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
   },
 ];
+
+/**
+ * Escapes raw control characters that the model left inside JSON string values.
+ *
+ * Even with responseMimeType set to application/json, Gemini occasionally emits
+ * a literal newline inside a string - `"output": "2` then a line break - which
+ * is invalid JSON and kills the whole response. Walking the text and escaping
+ * those in place recovers the payload instead of discarding a good answer over
+ * one stray character.
+ */
+export function repairJsonStrings(text) {
+  const ESCAPES = { "\n": "\\n", "\r": "\\r", "\t": "\\t", "\b": "\\b", "\f": "\\f" };
+
+  let out = "";
+  let inString = false;
+  let escaped = false;
+
+  for (const char of text) {
+    if (escaped) {
+      out += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\" && inString) {
+      out += char;
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      out += char;
+      continue;
+    }
+
+    if (inString && char in ESCAPES) {
+      out += ESCAPES[char];
+      continue;
+    }
+
+    // Any other C0 control character is illegal inside a JSON string.
+    if (inString && char < " ") continue;
+
+    out += char;
+  }
+
+  return out;
+}
 
 /**
  * Pulls a JSON value out of a model response.
@@ -67,7 +120,13 @@ export function extractJson(raw) {
   try {
     return JSON.parse(text);
   } catch {
-    // fall through to the balanced-scan below
+    // fall through to repair, then the balanced scan below
+  }
+
+  try {
+    return JSON.parse(repairJsonStrings(text));
+  } catch {
+    // fall through to the balanced scan below
   }
 
   const start = text.search(/[[{]/);
@@ -92,10 +151,15 @@ export function extractJson(raw) {
     if (char === '"') inString = true;
     else if (char === opener) depth++;
     else if (char === closer && --depth === 0) {
+      const slice = text.slice(start, i + 1);
       try {
-        return JSON.parse(text.slice(start, i + 1));
+        return JSON.parse(slice);
       } catch {
-        return null;
+        try {
+          return JSON.parse(repairJsonStrings(slice));
+        } catch {
+          return null;
+        }
       }
     }
   }
@@ -110,7 +174,7 @@ export function extractJson(raw) {
  * single module-level session across every user of the server, so one person's
  * resume and answers leaked into the context of the next person's questions.
  */
-export async function generateJson(prompt, { retries = 1 } = {}) {
+export async function generateJson(prompt, { retries = 2 } = {}) {
   const model = getModel();
   let lastError;
 
@@ -121,6 +185,26 @@ export async function generateJson(prompt, { retries = 1 } = {}) {
         generationConfig,
         safetySettings,
       });
+
+      // A truncated response is not a parsing problem, and saying so makes the
+      // difference between a useful retry and a confusing error.
+      const finishReason = result.response.candidates?.[0]?.finishReason;
+
+      if (finishReason === "MAX_TOKENS") {
+        lastError = new Error("The AI ran out of room before finishing. Please try again.");
+        console.error(
+          "Gemini hit MAX_TOKENS.",
+          `thoughts=${result.response.usageMetadata?.thoughtsTokenCount ?? "?"}`,
+          `output=${result.response.usageMetadata?.candidatesTokenCount ?? "?"}`
+        );
+        continue;
+      }
+
+      if (finishReason === "SAFETY" || finishReason === "RECITATION") {
+        throw new Error(
+          "The AI declined to answer that. Try rewording the job description or topic."
+        );
+      }
 
       const raw = result.response.text();
       const parsed = extractJson(raw);
